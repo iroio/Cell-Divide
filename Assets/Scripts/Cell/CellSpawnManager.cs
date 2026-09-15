@@ -1,5 +1,6 @@
 ﻿using System.Collections;
 using UnityEngine;
+using UnityEngine.EventSystems;
 using UnityEngine.InputSystem;
 
 public class CellSpawnManager : MonoBehaviour
@@ -14,15 +15,26 @@ public class CellSpawnManager : MonoBehaviour
     int _hash_cellLayer;
 
     // =================================================
-    // 마우스 정보
+    // Upgrade Option
     // =================================================
-    [SerializeField] float _ClickDelay = 1f;
+    [SerializeField] float _ClickDelay = 10f;
+    [SerializeField] int _divideAmount = 1;
+
+    // =================================================
+    // 마우스 위치 정보
+    // =================================================
     Vector2 _mPos;
     Vector2 _mWorldPos = new Vector2(-11f, 0f);
 
     bool _canClick = true;
 
     Collider2D _hit;
+
+    // =================================================
+    // Property
+    // =================================================
+    public float ClickDelay => _ClickDelay;
+    public int DivideAmount => _divideAmount;
 
     // =================================================
     // Object Pool
@@ -41,13 +53,27 @@ public class CellSpawnManager : MonoBehaviour
     }
 
     // =================================================
+    // Click Delay Reduce
+    // =================================================
+    public void ClickDelayReduce(float amount)
+    {
+        _ClickDelay = amount;
+        Debug.Log(_ClickDelay);
+    }
+
+    public void IncreseDivideAmount(int amount)
+    {
+        _divideAmount = amount;
+        Debug.Log(_divideAmount);
+    }
+
+    // =================================================
     // 세포 생성
     // =================================================
     public void spawnCell()
     {
         var cell = _cellControllerPool.Get();
 
-        // if (cell == null) return;
         if (cell == null)  return;
 
         cell.transform.position = _mWorldPos;
@@ -67,8 +93,11 @@ public class CellSpawnManager : MonoBehaviour
 
         CellController cell = _hit.GetComponent<CellController>();
         if(cell == null) return;
-        
-        spawnCell();
+
+        for (int i = 1; i <= _divideAmount; ++i)
+        {
+            spawnCell();
+        }
     }
 
     // =================================================
@@ -119,8 +148,17 @@ public class CellSpawnManager : MonoBehaviour
     void Update()
     {
         if (!_divide.action.WasPressedThisFrame()) return;
+        if (EventSystem.current.IsPointerOverGameObject())
+            return;
         if (!_canClick) return;
 
+        // 클릭 딜레이 적용
         StartCoroutine(CoClickDelay());
+
+        // 업그레이드 포인트 획득
+        for (int i = 1; i <= _divideAmount; ++i)
+        {
+            GameManager._GM.GainDNAPoint();
+        }
     }
 }

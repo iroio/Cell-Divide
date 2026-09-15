@@ -1,7 +1,4 @@
-using Unity.AppUI.Core;
-using Unity.VisualScripting;
 using UnityEngine;
-using UnityEngine.UIElements;
 
 public class CellController : MonoBehaviour
 {
