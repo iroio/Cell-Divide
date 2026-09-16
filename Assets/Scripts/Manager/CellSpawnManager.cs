@@ -8,10 +8,14 @@ public class CellSpawnManager : MonoBehaviour
     // =================================================
     // Reference
     // =================================================
+    [SerializeField] UpgradesManager _upgradesManager;
     [SerializeField] InputActionReference _divide;
     [SerializeField] GameObject _cellPrefab;
     [SerializeField] Transform _CellRoot;
 
+    // =================================================
+    // Layer Hash
+    // =================================================
     int _hash_cellLayer;
 
     // =================================================
@@ -41,6 +45,9 @@ public class CellSpawnManager : MonoBehaviour
     // =================================================
     GameObjectPool<CellController> _cellControllerPool;
 
+    // =================================================
+    // ClickDelay
+    // =================================================
     IEnumerator CoClickDelay()
     {
         _canClick = false;
@@ -61,6 +68,9 @@ public class CellSpawnManager : MonoBehaviour
         Debug.Log(_ClickDelay);
     }
 
+    // =================================================
+    // Increse Divide Amount
+    // =================================================
     public void IncreseDivideAmount(int amount)
     {
         _divideAmount = amount;
@@ -68,20 +78,22 @@ public class CellSpawnManager : MonoBehaviour
     }
 
     // =================================================
-    // 세포 생성
+    // Spawn Cell
     // =================================================
-    public void spawnCell()
+    public void SpawnCell()
     {
         var cell = _cellControllerPool.Get();
 
-        if (cell == null)  return;
+        cell.SetLifeCycle(_upgradesManager.CurrentLifeTime);
+
+        if (cell == null) return;
 
         cell.transform.position = _mWorldPos;
         cell.gameObject.SetActive(true);
     }
 
     // =================================================
-    // 세포 분열
+    // Cell Divide
     // =================================================
     public void CellDivide()
     {
@@ -96,8 +108,17 @@ public class CellSpawnManager : MonoBehaviour
 
         for (int i = 1; i <= _divideAmount; ++i)
         {
-            spawnCell();
+            SpawnCell();
         }
+    }
+
+    // =================================================
+    // Delete Cell
+    // =================================================
+    public void DeleteCell(CellController cell)
+    {
+        cell.gameObject.SetActive(false);
+        _cellControllerPool.Set(cell);
     }
 
     // =================================================
@@ -105,7 +126,7 @@ public class CellSpawnManager : MonoBehaviour
     // =================================================
     void Awake()
     {
-         _cellControllerPool = new GameObjectPool<CellController> (50, () => 
+         _cellControllerPool = new GameObjectPool<CellController> (200, () => 
         {
             var obj = Instantiate(_cellPrefab, _CellRoot);
             obj.SetActive(false);
@@ -139,7 +160,7 @@ public class CellSpawnManager : MonoBehaviour
     {
         _hash_cellLayer = 1 << LayerMask.NameToLayer("Cell");
 
-        spawnCell();
+        SpawnCell();
     }
 
     // =================================================

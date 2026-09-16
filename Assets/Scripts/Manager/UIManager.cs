@@ -10,14 +10,30 @@ public class UIManager : MonoBehaviour
 
     public static UIManager _UM;
 
+    // =========================================================
+    // SetDNAPoint
+    // =========================================================
     public void SetDNAPoint(float point)
     {
         _dnaPointUI.text = point.ToString();
     }
 
-    public void CountUp(TextMeshProUGUI levelUI, int level)
+    // =========================================================
+    // CountUp
+    // =========================================================
+    public void CountUp(TextMeshProUGUI levelUI, int level, int maxLevel)
     {
-        levelUI.text = "+" + level.ToString();
+        int curLev = level;
+        int maxLev = maxLevel;
+
+        if (curLev >= maxLev)
+        { 
+            levelUI.text = "MAX LEVEL";
+        }
+        else
+        {
+            levelUI.text = "+" + level.ToString();
+        }
     }
 
     // =========================================================

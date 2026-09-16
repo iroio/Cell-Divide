@@ -1,3 +1,4 @@
+using System.Collections;
 using UnityEngine;
 
 public class CellController : MonoBehaviour
@@ -5,11 +6,10 @@ public class CellController : MonoBehaviour
     // =================================================
     // Reference
     // =================================================
-    [SerializeField] Transform _cellMedia;
-
     CellSpawnManager _cellManager;
 
     Rigidbody2D _rb;
+    Collider2D _currentArea;
 
     // =================================================
     // Cell Movement Option
@@ -21,16 +21,23 @@ public class CellController : MonoBehaviour
     Quaternion _targetRotation;
 
     float _timer = 0;
-    
+
+    // =================================================
+    // Cell LifeCycle Option
+    // =================================================
+    [SerializeField] float _lifeTime = 15f;
+
+    public float LifeTime => _lifeTime;
+
     // =================================================
     // Cell
     // =================================================
     float _radius;
 
     // =================================================
-    // 상태값
+    // Layer Hash
     // =================================================
-    bool _isExit = false;
+    int _hash_cellMedia;
 
     // =================================================
     // 초기화
@@ -41,7 +48,37 @@ public class CellController : MonoBehaviour
     }
 
     // =================================================
-    // 세포 기본 움직임
+    // Set LifeCycle
+    // =================================================
+    public void SetLifeCycle(float time)
+    {
+        _lifeTime = time;
+    }
+
+    // =================================================
+    // Cell LifeCycle
+    // =================================================
+    IEnumerator CoCellLifeCycle()
+    {
+        float time = 0;
+        float lifeTime = _lifeTime;
+
+        while (time < lifeTime)
+        {
+            time += Time.deltaTime;
+
+            yield return null;
+        }
+
+        // Cell 삭제 파티클 생성
+        
+
+        // 삭제 진행
+        _cellManager.DeleteCell(this);
+    }
+
+    // =================================================
+    // Cell Movement
     // =================================================
     public void CellMovement()
     {
@@ -51,7 +88,7 @@ public class CellController : MonoBehaviour
         {
             _timer = 0f;
 
-            float angle = Random.Range(-90f, 90f);
+            float angle = Random.Range(0f, 360f);
 
             _targetRotation = Quaternion.Euler(0f,0f, angle) * transform.rotation;
         }
@@ -63,9 +100,33 @@ public class CellController : MonoBehaviour
         _rb.MovePosition(nextPos);
     }
 
-    public void ExitCheck()
-    {
 
+    // =================================================
+    // CellAreaheck
+    // =================================================
+    public void CellAreaheck()
+    {
+        Collider2D collider = Physics2D.OverlapPoint(transform.position, _hash_cellMedia);
+
+        if (collider == null)
+        {
+            _cellManager.DeleteCell(this);
+        }
+
+        _currentArea = collider;
+
+        if (_currentArea == null) return;
+
+        Vector2 center = _currentArea.bounds.center;
+        float areaRadius = _currentArea.bounds.extents.x;
+        float maxDistance = areaRadius - _radius;
+
+        Vector2 dir = _rb.position - center;
+
+        if (dir.magnitude > maxDistance)
+        {
+            _rb.position = center + dir.normalized * maxDistance;
+        }
     }
 
     // =================================================
@@ -89,10 +150,21 @@ public class CellController : MonoBehaviour
     }
 
     // =================================================
-    // Update
+    // Start
     // =================================================
-    void Update()
+    void Start()
     {
+        _hash_cellMedia = 1 << LayerMask.NameToLayer("Media");
+
+        StartCoroutine(CoCellLifeCycle());
+    }
+
+    // =================================================
+    // FixedUpdate
+    // =================================================
+    void FixedUpdate()
+    {
+        CellAreaheck();
         CellMovement();
     }
 }
