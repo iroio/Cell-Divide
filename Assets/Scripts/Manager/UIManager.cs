@@ -11,11 +11,20 @@ public class UIManager : MonoBehaviour
     public static UIManager _UM;
 
     // =========================================================
-    // SetDNAPoint
+    // Set DNA Point
     // =========================================================
     public void SetDNAPoint(float point)
     {
         _dnaPointUI.text = point.ToString();
+    }
+
+    // =========================================================
+    // Purchase
+    // =========================================================
+    public void Purchase(TextMeshProUGUI levelUI, bool isBuy)
+    {
+        if(isBuy == true)
+            levelUI.text = "Purchase";
     }
 
     // =========================================================

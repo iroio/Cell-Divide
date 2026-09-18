@@ -2,6 +2,7 @@
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.InputSystem;
+using static UnityEngine.ParticleSystem;
 
 public class CellSpawnManager : MonoBehaviour
 {
@@ -21,8 +22,9 @@ public class CellSpawnManager : MonoBehaviour
     // =================================================
     // Upgrade Option
     // =================================================
-    [SerializeField] float _ClickDelay = 10f;
+    [SerializeField] float _clickDelay = 10f;
     [SerializeField] int _divideAmount = 1;
+    [SerializeField] float _selfDivideTime = 30f;
 
     // =================================================
     // 마우스 위치 정보
@@ -35,10 +37,23 @@ public class CellSpawnManager : MonoBehaviour
     Collider2D _hit;
 
     // =================================================
+    // 파티클 시스템
+    // =================================================
+    [SerializeField] ParticleSystem _partcleSystem;
+
+    Vector3 particlePos;
+
+    // =================================================
+    // 상태값
+    // =================================================
+    bool _isUpgraded = false;
+
+    // =================================================
     // Property
     // =================================================
-    public float ClickDelay => _ClickDelay;
+    public float ClickDelay => _clickDelay;
     public int DivideAmount => _divideAmount;
+    public bool IsUpgraded => _isUpgraded;
 
     // =================================================
     // Object Pool
@@ -54,27 +69,33 @@ public class CellSpawnManager : MonoBehaviour
 
         CellDivide();
 
-        yield return new WaitForSeconds(_ClickDelay);
+        yield return new WaitForSeconds(_clickDelay);
 
         _canClick = true;
     }
 
     // =================================================
-    // Click Delay Reduce
+    // Decrease Click Delay
     // =================================================
-    public void ClickDelayReduce(float amount)
+    public void DecClickDelay(float amount)
     {
-        _ClickDelay = amount;
-        Debug.Log(_ClickDelay);
+        _clickDelay = amount;
     }
 
     // =================================================
-    // Increse Divide Amount
+    // Increase Divide Amount
     // =================================================
-    public void IncreseDivideAmount(int amount)
+    public void IncDivideAmount(int amount)
     {
         _divideAmount = amount;
-        Debug.Log(_divideAmount);
+    }
+
+    // =================================================
+    // Check Upgraded Prod Time
+    // =================================================
+    public void ChkUpgradedProdTime()
+    {
+        _isUpgraded = true;
     }
 
     // =================================================
@@ -84,12 +105,15 @@ public class CellSpawnManager : MonoBehaviour
     {
         var cell = _cellControllerPool.Get();
 
-        cell.SetLifeCycle(_upgradesManager.CurrentLifeTime);
-
         if (cell == null) return;
+
+        cell.SetLifeCycle(_upgradesManager.CurrentLifeTime);
+        cell.SetProdTime(_upgradesManager.CurrentProdTime);
 
         cell.transform.position = _mWorldPos;
         cell.gameObject.SetActive(true);
+
+        cell.StartSelfProduct();
     }
 
     // =================================================
@@ -119,6 +143,11 @@ public class CellSpawnManager : MonoBehaviour
     {
         cell.gameObject.SetActive(false);
         _cellControllerPool.Set(cell);
+
+        _partcleSystem.gameObject.SetActive(true);
+        _partcleSystem.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
+        _partcleSystem.transform.position = cell.transform.position;
+        _partcleSystem.Play();
     }
 
     // =================================================
@@ -169,8 +198,12 @@ public class CellSpawnManager : MonoBehaviour
     void Update()
     {
         if (!_divide.action.WasPressedThisFrame()) return;
-        if (EventSystem.current.IsPointerOverGameObject())
-            return;
+
+        // 버튼 클릭할 때도 Input System 입력이 발생
+        // 현재 마우스의 위치가 UI오브젝트 위에 있는가 판별
+        // 결과값은 bool
+        if (EventSystem.current.IsPointerOverGameObject()) return;
+
         if (!_canClick) return;
 
         // 클릭 딜레이 적용

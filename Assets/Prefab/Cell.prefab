@@ -107,10 +107,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 047665cc5e38a5c449452f6a0e3e1c89, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::CellController
-  changeTime: 3
-  rotationTime: 1
+  changeTime: 1
+  rotationTime: 0.5
   _speed: 1.5
   _lifeTime: 15
+  _productTime: 10
 --- !u!58 &6732318786630418806
 CircleCollider2D:
   m_ObjectHideFlags: 0

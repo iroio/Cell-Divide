@@ -33,7 +33,7 @@ public class GameManager : MonoBehaviour
     }
 
     // =========================================================
-    // GainDNAPoint
+    // Gain DNA Point
     // =========================================================
     public void GainDNAPoint()
     {
@@ -42,13 +42,17 @@ public class GameManager : MonoBehaviour
     }
 
     // =========================================================
-    // LoseDNAPoint
+    // Lose DNA Point
     // =========================================================
     public void LoseDNAPoint(float amount)
     {
         _point = Mathf.Max(0f, _point - amount);
         UIManager._UM.SetDNAPoint(_point);
     }
+
+    // =========================================================
+    // Awake
+    // =========================================================
 
     private void Awake()
     {
