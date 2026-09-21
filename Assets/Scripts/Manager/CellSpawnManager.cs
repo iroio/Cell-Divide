@@ -12,7 +12,9 @@ public class CellSpawnManager : MonoBehaviour
     [SerializeField] UpgradesManager _upgradesManager;
     [SerializeField] InputActionReference _divide;
     [SerializeField] GameObject _cellPrefab;
-    [SerializeField] Transform _CellRoot;
+    [SerializeField] Transform _cellRoot;
+    [SerializeField] GameObject _particlePrefab;
+    [SerializeField] Transform _particleRoot;
 
     // =================================================
     // Layer Hash
@@ -39,9 +41,7 @@ public class CellSpawnManager : MonoBehaviour
     // =================================================
     // 파티클 시스템
     // =================================================
-    [SerializeField] ParticleSystem _partcleSystem;
-
-    Vector3 particlePos;
+    Vector3 _particlePos;
 
     // =================================================
     // 상태값
@@ -59,6 +59,7 @@ public class CellSpawnManager : MonoBehaviour
     // Object Pool
     // =================================================
     GameObjectPool<CellController> _cellControllerPool;
+    GameObjectPool<ParticleSystem> _particleSystemsPool;
 
     // =================================================
     // ClickDelay
@@ -72,6 +73,19 @@ public class CellSpawnManager : MonoBehaviour
         yield return new WaitForSeconds(_clickDelay);
 
         _canClick = true;
+    }
+
+    // =================================================
+    // Return Particle
+    // =================================================
+    IEnumerator CoReturnParticle(ParticleSystem particle)
+    {
+        yield return new WaitUntil(() => !particle.IsAlive());
+
+        particle.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
+        particle.gameObject.SetActive(false);
+
+        _particleSystemsPool.Set(particle);
     }
 
     // =================================================
@@ -141,13 +155,21 @@ public class CellSpawnManager : MonoBehaviour
     // =================================================
     public void DeleteCell(CellController cell)
     {
+        _particlePos = cell.transform.position;
+
         cell.gameObject.SetActive(false);
         _cellControllerPool.Set(cell);
 
-        _partcleSystem.gameObject.SetActive(true);
-        _partcleSystem.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
-        _partcleSystem.transform.position = cell.transform.position;
-        _partcleSystem.Play();
+        var particle = _particleSystemsPool.Get();
+
+        if(particle == null) return;
+
+        particle.transform.position = _particlePos;
+        particle.gameObject.SetActive(true);
+        particle.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
+        particle.Play();
+
+        StartCoroutine(CoReturnParticle(particle));
     }
 
     // =================================================
@@ -157,12 +179,20 @@ public class CellSpawnManager : MonoBehaviour
     {
          _cellControllerPool = new GameObjectPool<CellController> (200, () => 
         {
-            var obj = Instantiate(_cellPrefab, _CellRoot);
+            var obj = Instantiate(_cellPrefab, _cellRoot);
             obj.SetActive(false);
             var cell = obj.GetComponent<CellController>();
             cell.InitCell(this);
 
             return cell;
+        });
+
+        _particleSystemsPool = new GameObjectPool<ParticleSystem> (5, () =>
+        {
+            var obj = Instantiate(_particlePrefab, _particleRoot);
+            obj.SetActive(false);
+
+            return obj.GetComponent<ParticleSystem>();
         });
     }
 

@@ -1,5 +1,4 @@
 using System.Collections;
-using Unity.VisualScripting;
 using UnityEngine;
 
 public class CellController : MonoBehaviour
@@ -7,7 +6,7 @@ public class CellController : MonoBehaviour
     // =================================================
     // Reference
     // =================================================
-    CellSpawnManager _cellManager;
+    CellSpawnManager _cellSpawnManager;
 
     Rigidbody2D _rb;
     Collider2D _currentArea;
@@ -53,7 +52,7 @@ public class CellController : MonoBehaviour
     // =================================================
     public void InitCell(CellSpawnManager manager)
     {
-        _cellManager = manager;
+        _cellSpawnManager = manager;
     }
 
     // =================================================
@@ -92,10 +91,10 @@ public class CellController : MonoBehaviour
         }
 
         // Cell 삭제 파티클 생성
-        
+
 
         // 삭제 진행
-        _cellManager.DeleteCell(this);
+        _cellSpawnManager.DeleteCell(this);
     }
 
     // =================================================
@@ -123,7 +122,7 @@ public class CellController : MonoBehaviour
     // =================================================
     public void StartSelfProduct()
     {
-        if (!_cellManager.IsUpgraded) return;
+        if (!_cellSpawnManager.IsUpgraded) return;
         if (_isSelfProducting) return;
 
         _isSelfProducting = true;
@@ -163,7 +162,7 @@ public class CellController : MonoBehaviour
 
         if (collider == null)
         {
-            _cellManager.DeleteCell(this);
+            _cellSpawnManager.DeleteCell(this);
         }
 
         _currentArea = collider;
