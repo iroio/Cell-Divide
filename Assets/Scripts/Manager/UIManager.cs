@@ -46,6 +46,28 @@ public class UIManager : MonoBehaviour
     }
 
     // =========================================================
+    // Cell CountUp
+    // =========================================================
+    public void CellCountUp(TextMeshProUGUI countUi, int curCount)
+    {
+        countUi.text = curCount.ToString();
+    }
+
+    // =========================================================
+    // CurrentStat
+    // =========================================================
+    public void CurrentStat(TextMeshProUGUI delayUi, TextMeshProUGUI prodTUi,
+        TextMeshProUGUI amountUi, TextMeshProUGUI lctUi, TextMeshProUGUI sdtUi,
+        float delay, float prodT, int amount, float lct, float sdt)
+    {
+        delayUi.text = delay.ToString("0.###");
+        prodTUi.text  = prodT.ToString("0.###");
+        amountUi.text = amount.ToString();
+        lctUi.text = lct.ToString("0.###");
+        sdtUi.text = sdt.ToString("0.###");
+    }
+
+    // =========================================================
     // Awake
     // =========================================================
     public void Awake()

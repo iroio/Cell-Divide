@@ -2,7 +2,6 @@
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.InputSystem;
-using static UnityEngine.ParticleSystem;
 
 public class CellSpawnManager : MonoBehaviour
 {
@@ -15,6 +14,9 @@ public class CellSpawnManager : MonoBehaviour
     [SerializeField] Transform _cellRoot;
     [SerializeField] GameObject _particlePrefab;
     [SerializeField] Transform _particleRoot;
+    [SerializeField] CellMediaManager _cellMediaManager;
+
+
 
     // =================================================
     // Layer Hash
@@ -26,7 +28,8 @@ public class CellSpawnManager : MonoBehaviour
     // =================================================
     [SerializeField] float _clickDelay = 10f;
     [SerializeField] int _divideAmount = 1;
-    [SerializeField] float _selfDivideTime = 30f;
+    [SerializeField] float _selfDivideTime = 150f;
+    [SerializeField] int _maxCellCount = 200;
 
     // =================================================
     // 마우스 위치 정보
@@ -46,14 +49,17 @@ public class CellSpawnManager : MonoBehaviour
     // =================================================
     // 상태값
     // =================================================
-    bool _isUpgraded = false;
+    bool _isUpgradProdTime = false;
+    bool _isUpgradSelfDivide = false;
 
     // =================================================
     // Property
     // =================================================
     public float ClickDelay => _clickDelay;
     public int DivideAmount => _divideAmount;
-    public bool IsUpgraded => _isUpgraded;
+    public bool IsUpgradeProdTime => _isUpgradProdTime;
+    public bool IsUpgradeSelfDivide => _isUpgradSelfDivide;
+    public float SelfDivideTime => _selfDivideTime;
 
     // =================================================
     // Object Pool
@@ -97,6 +103,14 @@ public class CellSpawnManager : MonoBehaviour
     }
 
     // =================================================
+    // Decrease Self Divide Time
+    // =================================================
+    public void DecSelfDivideTime(float time)
+    {
+        _selfDivideTime = time;
+    }
+
+    // =================================================
     // Increase Divide Amount
     // =================================================
     public void IncDivideAmount(int amount)
@@ -107,9 +121,17 @@ public class CellSpawnManager : MonoBehaviour
     // =================================================
     // Check Upgraded Prod Time
     // =================================================
-    public void ChkUpgradedProdTime()
+    public void ChkUpgradeProdTime()
     {
-        _isUpgraded = true;
+        _isUpgradProdTime = true;
+    }
+
+    // =================================================
+    // Check Upgraded Self Divide
+    // =================================================
+    public void ChkUpgradeSelfDivide()
+    {
+        _isUpgradSelfDivide = true;
     }
 
     // =================================================
@@ -120,6 +142,7 @@ public class CellSpawnManager : MonoBehaviour
         var cell = _cellControllerPool.Get();
 
         if (cell == null) return;
+        if(_cellMediaManager.ChildCount >= _maxCellCount) return;
 
         cell.SetLifeCycle(_upgradesManager.CurrentLifeTime);
         cell.SetProdTime(_upgradesManager.CurrentProdTime);
@@ -127,7 +150,9 @@ public class CellSpawnManager : MonoBehaviour
         cell.transform.position = _mWorldPos;
         cell.gameObject.SetActive(true);
 
+        cell.StartCellLifeCycle();
         cell.StartSelfProduct();
+        cell.StartSelfDivide();
     }
 
     // =================================================
@@ -151,15 +176,30 @@ public class CellSpawnManager : MonoBehaviour
     }
 
     // =================================================
+    // Cell Self Divide
+    // =================================================
+    public void CellSelfDivide(CellController parentCell)
+    {
+        _mWorldPos = parentCell.transform.position;
+
+        for (int i = 1; i <= _divideAmount; ++i)
+        {
+            SpawnCell();
+        }
+    }
+
+    // =================================================
     // Delete Cell
     // =================================================
     public void DeleteCell(CellController cell)
     {
         _particlePos = cell.transform.position;
 
+        // Cell Set()
         cell.gameObject.SetActive(false);
         _cellControllerPool.Set(cell);
 
+        // 삭제시 파티클 실행
         var particle = _particleSystemsPool.Get();
 
         if(particle == null) return;

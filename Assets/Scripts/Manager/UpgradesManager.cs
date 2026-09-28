@@ -1,5 +1,4 @@
 using TMPro;
-using Unity.VisualScripting;
 using UnityEngine;
 
 public class UpgradesManager : MonoBehaviour
@@ -9,13 +8,26 @@ public class UpgradesManager : MonoBehaviour
     // =================================================
     [SerializeField] CellSpawnManager _CSManager;
 
+    [Header("Display Purchase")]
     [SerializeField] TextMeshProUGUI _buySelfProductUI;
     [SerializeField] TextMeshProUGUI _buySelfDivideUI;
 
+    [Header("Display Upgrade Level")]
+    // dec
     [SerializeField] TextMeshProUGUI _decDelayLevelUI;
     [SerializeField] TextMeshProUGUI _decProdTimeLevelUI;
+    [SerializeField] TextMeshProUGUI _decSelfDivideTimeUI;
+    // inc
     [SerializeField] TextMeshProUGUI _incDivideAmountLevelUI;
     [SerializeField] TextMeshProUGUI _incLifeCycleTimeLevelUI;
+ 
+
+    [Header("Display Current Stat")]
+    [SerializeField] TextMeshProUGUI _delayUI;
+    [SerializeField] TextMeshProUGUI _prodTUI;
+    [SerializeField] TextMeshProUGUI _amountUI;
+    [SerializeField] TextMeshProUGUI _lctUI;
+    [SerializeField] TextMeshProUGUI _sdtUI;
 
     // =================================================
     // Buy Option
@@ -53,16 +65,28 @@ public class UpgradesManager : MonoBehaviour
     // =================================================
     // Divide Option
     // =================================================
-    [Header("Cell Divide Amount Option")]
+    [Header("Cell Divide Option")]
     [SerializeField] int _incAmountLevel = 50;
 
     int _amountLevel = 0;
 
     // =================================================
+    // Self Divide Option
+    // =================================================
+    [Header("Seldf Divide Option")]
+    [SerializeField] float _defaultSelfDivideTime = 150f;
+    [SerializeField] float _minSelfDivideTime = 30f;
+    [SerializeField] int _decSelfdivideTimeLevel = 50;
+
+    int _selfDivideLevel = 0;
+
+    float _decreaseSelfDivideTime;
+
+    // =================================================
     // Life-Cycle Option
     // =================================================
     [Header("Cell Life-Cycle Increse Option")]
-    [SerializeField] float _maxLifeTime = 60f;
+    [SerializeField] float _maxLifeTime = 90f;
     [SerializeField] float _defaultLifeTime = 15f;
     [SerializeField] int _incLifeCycleLevel = 50;
 
@@ -90,8 +114,8 @@ public class UpgradesManager : MonoBehaviour
         // 임시
         float cost = 1f;
 
-        // 자가 생산 
-        _CSManager.ChkUpgradedProdTime();
+        // 자가 생산 여부 확인
+        _CSManager.ChkUpgradeProdTime();
 
         GameManager._GM.LoseDNAPoint(cost);
 
@@ -114,17 +138,58 @@ public class UpgradesManager : MonoBehaviour
             return;
         }
 
+        if (_lifeCycleLevel < 50)
+        {
+            Debug.Log("최대 생명 주기에 먼저 도달해야 합니다.");
+            return;
+        }
+
         // 임시
         float cost = 1f;
 
         // 자가 분열
-        //
+        _CSManager.ChkUpgradeSelfDivide();
 
         GameManager._GM.LoseDNAPoint(cost);
           
         _selfDivide = true;
 
         UIManager._UM.Purchase(_buySelfDivideUI, _selfDivide);
+    }
+
+    // =================================================
+    // Onclick Decrease Self Divide Time
+    // =================================================
+    public void OnClickDecSelfDivideTime()
+    {
+        if (GameManager._GM.Point < 1f)
+        {
+            Debug.Log("Point 부족");
+            return;
+        }
+
+        if(_lifeCycleLevel < 50)
+        {
+            Debug.Log("최대 생명 주기에 먼저 도달해야 합니다.");
+            return;
+        }
+
+        if (_CSManager.SelfDivideTime <= _minSelfDivideTime)
+        {
+            Debug.Log("최소 딜레이 도달");
+            return;
+        }
+
+        float divideTime = _CSManager.SelfDivideTime;
+        divideTime = Mathf.Max(_minSelfDivideTime, divideTime - _decreaseSelfDivideTime);
+        _CSManager.DecSelfDivideTime(divideTime);
+
+        // 임시
+        float cost = 1f;
+        _selfDivideLevel++;
+
+        GameManager._GM.LoseDNAPoint(cost);
+        UIManager._UM.CountUp(_decSelfDivideTimeUI, _selfDivideLevel, _decSelfdivideTimeLevel);
     }
 
     // =================================================
@@ -241,6 +306,13 @@ public class UpgradesManager : MonoBehaviour
         UIManager._UM.CountUp(_incLifeCycleTimeLevelUI, _lifeCycleLevel, _incLifeCycleLevel);
     }
 
+    public void SetUI()
+    {
+        UIManager._UM.CurrentStat(_delayUI, _prodTUI, _amountUI, _lctUI, _sdtUI,
+           _CSManager.ClickDelay, _currentProdTime, _CSManager.DivideAmount, 
+           _currentLifeTime, _CSManager.SelfDivideTime);
+    }
+
     // =================================================
     // Awake
     // =================================================
@@ -257,6 +329,7 @@ public class UpgradesManager : MonoBehaviour
         _decreaseDelay = (_defaultDelayTime - _minDelayTime) / _decDelayLevel;
         _increseLCTime = (_maxLifeTime - _defaultLifeTime) / _incLifeCycleLevel;
         _decreaseProdTime = (_defaultProdTime - _minProdTime) / _decProdLevel;
+        _decreaseSelfDivideTime = (_defaultSelfDivideTime - _minSelfDivideTime) / _decSelfdivideTimeLevel;
     }
 
     // =================================================
@@ -264,6 +337,6 @@ public class UpgradesManager : MonoBehaviour
     // =================================================
     void Update()
     {
-        
+        SetUI();
     }
 }

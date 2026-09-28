@@ -33,6 +33,11 @@ public class CellController : MonoBehaviour
     [SerializeField] float _productTime = 10f;
 
     // =================================================
+    // Cell Self Divide Option
+    // =================================================
+    [SerializeField] float _divideRate = 0.1f;
+
+    // =================================================
     // Cell Stat
     // =================================================
     float _radius;
@@ -46,6 +51,7 @@ public class CellController : MonoBehaviour
     // 상태값
     // =================================================
     bool _isSelfProducting = false;
+    bool _isSelfDivide = false;
 
     // =================================================
     // 초기화
@@ -72,6 +78,14 @@ public class CellController : MonoBehaviour
     }
 
     // =================================================
+    // Set Divide Rate
+    // =================================================
+    public void SetDivideRate(float rate)
+    {
+        _divideRate = rate;
+    }
+
+    // =================================================
     // Cell Life-Cycle
     // =================================================
     IEnumerator CoCellLifeCycle()
@@ -89,9 +103,6 @@ public class CellController : MonoBehaviour
 
             yield return null;
         }
-
-        // Cell 삭제 파티클 생성
-
 
         // 삭제 진행
         _cellSpawnManager.DeleteCell(this);
@@ -118,16 +129,60 @@ public class CellController : MonoBehaviour
     }
 
     // =================================================
+    // Cell Self Divide
+    // =================================================
+    IEnumerator CoSelfDivide()
+    {
+        while (true)
+        {
+            float time = 0;
+
+            while (time < _cellSpawnManager.SelfDivideTime)
+            {
+                time += Time.deltaTime;
+
+                yield return null;
+            }
+
+            if(Random.value < _divideRate)
+            {
+                _cellSpawnManager.CellSelfDivide(this);
+            }
+        }
+    }
+
+    // =================================================
+    // Start Self Life-Cycle
+    // =================================================
+    public void StartCellLifeCycle()
+    {
+        StartCoroutine(CoCellLifeCycle());
+    }
+
+    // =================================================
     // Start Self Product
     // =================================================
     public void StartSelfProduct()
     {
-        if (!_cellSpawnManager.IsUpgraded) return;
+        if (!_cellSpawnManager.IsUpgradeProdTime) return;
         if (_isSelfProducting) return;
 
         _isSelfProducting = true;
 
         StartCoroutine(CoSelfProduct());
+    }
+
+    // =================================================
+    // Start Self Divide
+    // =================================================
+    public void StartSelfDivide()
+    {
+        if (!_cellSpawnManager.IsUpgradeSelfDivide) return;
+        if (_isSelfDivide) return;
+
+        _isSelfDivide = true;
+
+        StartCoroutine(CoSelfDivide());
     }
 
     // =================================================
@@ -207,13 +262,12 @@ public class CellController : MonoBehaviour
     void Start()
     {
         _hash_cellMedia = 1 << LayerMask.NameToLayer("Media");
-
-        StartCoroutine(CoCellLifeCycle());
     }
 
     void OnDisable()
     {
         _isSelfProducting = false;
+        _isSelfDivide = false;
     }
 
     // =================================================
