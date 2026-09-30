@@ -35,7 +35,7 @@ public class CellController : MonoBehaviour
     // =================================================
     // Cell Self Divide Option
     // =================================================
-    [SerializeField] float _divideRate = 0.1f;
+    [SerializeField] float _selfDivideRate = 0.005f;
 
     // =================================================
     // Cell Stat
@@ -82,7 +82,7 @@ public class CellController : MonoBehaviour
     // =================================================
     public void SetDivideRate(float rate)
     {
-        _divideRate = rate;
+        _selfDivideRate = rate;
     }
 
     // =================================================
@@ -92,8 +92,8 @@ public class CellController : MonoBehaviour
     {
         float time = 0;
 
-        float lifeTimeErrorMin = _lifeTime - 0.7f;
-        float lifeTimeErrorMax = _lifeTime + 0.7f;
+        float lifeTimeErrorMin = _lifeTime - 0.8f;
+        float lifeTimeErrorMax = _lifeTime + 0.8f;
 
         float setLifeTime = Random.Range(lifeTimeErrorMin, lifeTimeErrorMax);
 
@@ -144,7 +144,7 @@ public class CellController : MonoBehaviour
                 yield return null;
             }
 
-            if(Random.value < _divideRate)
+            if(Random.value < _selfDivideRate)
             {
                 _cellSpawnManager.CellSelfDivide(this);
             }
@@ -218,6 +218,7 @@ public class CellController : MonoBehaviour
         if (collider == null)
         {
             _cellSpawnManager.DeleteCell(this);
+            return;
         }
 
         _currentArea = collider;

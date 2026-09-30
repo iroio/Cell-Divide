@@ -112,7 +112,7 @@ MonoBehaviour:
   _speed: 1.5
   _lifeTime: 200
   _productTime: 10
-  _divideRate: 0.1
+  _divideRate: 0.01
 --- !u!58 &6732318786630418806
 CircleCollider2D:
   m_ObjectHideFlags: 0

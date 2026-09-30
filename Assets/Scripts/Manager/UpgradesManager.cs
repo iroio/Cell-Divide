@@ -20,7 +20,7 @@ public class UpgradesManager : MonoBehaviour
     // inc
     [SerializeField] TextMeshProUGUI _incDivideAmountLevelUI;
     [SerializeField] TextMeshProUGUI _incLifeCycleTimeLevelUI;
- 
+    [SerializeField] TextMeshProUGUI _incSelfDivideRateLevelUI;
 
     [Header("Display Current Stat")]
     [SerializeField] TextMeshProUGUI _delayUI;
@@ -28,6 +28,7 @@ public class UpgradesManager : MonoBehaviour
     [SerializeField] TextMeshProUGUI _amountUI;
     [SerializeField] TextMeshProUGUI _lctUI;
     [SerializeField] TextMeshProUGUI _sdtUI;
+    [SerializeField] TextMeshProUGUI _sdrUI;
 
     // =================================================
     // Buy Option
@@ -75,12 +76,27 @@ public class UpgradesManager : MonoBehaviour
     // =================================================
     [Header("Seldf Divide Option")]
     [SerializeField] float _defaultSelfDivideTime = 150f;
-    [SerializeField] float _minSelfDivideTime = 30f;
+    [SerializeField] float _minSelfDivideTime = 100f;
     [SerializeField] int _decSelfdivideTimeLevel = 50;
 
     int _selfDivideLevel = 0;
 
     float _decreaseSelfDivideTime;
+
+    // =================================================
+    // Self Divide Rate Option
+    // =================================================
+    [Header("Seldf Divide Rate Option")]
+    [SerializeField] float _defaultDivideRate = 0.005f;
+    [SerializeField] float _maxDivideRate = 0.05f;
+    [SerializeField] int _incSelfDivideRateLevel = 50;
+
+    int _selfDivideRateLevel = 0;
+
+    float _currentDivideRate = 0.005f;
+    float _incSelfDivideRate;
+
+    public float CurrentDivideRate => _currentDivideRate;
 
     // =================================================
     // Life-Cycle Option
@@ -93,7 +109,7 @@ public class UpgradesManager : MonoBehaviour
     int _lifeCycleLevel = 0;
 
     float _currentLifeTime = 15f;
-    float _increseLCTime;
+    float _incLifeCycleTime;
 
     public float CurrentLifeTime => _currentLifeTime;
 
@@ -103,7 +119,11 @@ public class UpgradesManager : MonoBehaviour
     public void OnClickBuySelfProduct()
     {
         // 이미 구매함 팝업
-        //
+        if (_selfProduct)
+        {
+            Debug.Log("이미 자가 생산을 구매했습니다.");
+            return;
+        }
 
         if (GameManager._GM.Point < 1f)
         {
@@ -130,7 +150,11 @@ public class UpgradesManager : MonoBehaviour
     public void OnClickBuySelfDivide()
     {
         // 이미 구매함 팝업
-        //
+        if (_selfDivide)
+        {
+            Debug.Log("이미 자가 분열을 구매했습니다.");
+            return;
+        }
 
         if (GameManager._GM.Point < 1f)
         {
@@ -155,41 +179,6 @@ public class UpgradesManager : MonoBehaviour
         _selfDivide = true;
 
         UIManager._UM.Purchase(_buySelfDivideUI, _selfDivide);
-    }
-
-    // =================================================
-    // Onclick Decrease Self Divide Time
-    // =================================================
-    public void OnClickDecSelfDivideTime()
-    {
-        if (GameManager._GM.Point < 1f)
-        {
-            Debug.Log("Point 부족");
-            return;
-        }
-
-        if(_lifeCycleLevel < 50)
-        {
-            Debug.Log("최대 생명 주기에 먼저 도달해야 합니다.");
-            return;
-        }
-
-        if (_CSManager.SelfDivideTime <= _minSelfDivideTime)
-        {
-            Debug.Log("최소 딜레이 도달");
-            return;
-        }
-
-        float divideTime = _CSManager.SelfDivideTime;
-        divideTime = Mathf.Max(_minSelfDivideTime, divideTime - _decreaseSelfDivideTime);
-        _CSManager.DecSelfDivideTime(divideTime);
-
-        // 임시
-        float cost = 1f;
-        _selfDivideLevel++;
-
-        GameManager._GM.LoseDNAPoint(cost);
-        UIManager._UM.CountUp(_decSelfDivideTimeUI, _selfDivideLevel, _decSelfdivideTimeLevel);
     }
 
     // =================================================
@@ -257,6 +246,47 @@ public class UpgradesManager : MonoBehaviour
     }
 
     // =================================================
+    // Onclick Decrease Self Divide Time
+    // =================================================
+    public void OnClickDecSelfDivideTime()
+    {
+        if (GameManager._GM.Point < 1f)
+        {
+            Debug.Log("Point 부족");
+            return;
+        }
+
+        if(_selfDivide == false)
+        {
+            Debug.Log("자가분열을 먼저 구매해야 합니다.");
+            return;
+        }
+
+        if (_lifeCycleLevel < 50)
+        {
+            Debug.Log("최대 생명 주기에 먼저 도달해야 합니다.");
+            return;
+        }
+
+        if (_CSManager.SelfDivideTime <= _minSelfDivideTime)
+        {
+            Debug.Log("최소 딜레이 도달");
+            return;
+        }
+
+        float divideTime = _CSManager.SelfDivideTime;
+        divideTime = Mathf.Max(_minSelfDivideTime, divideTime - _decreaseSelfDivideTime);
+        _CSManager.DecSelfDivideTime(divideTime);
+
+        // 임시
+        float cost = 1f;
+        _selfDivideLevel++;
+
+        GameManager._GM.LoseDNAPoint(cost);
+        UIManager._UM.CountUp(_decSelfDivideTimeUI, _selfDivideLevel, _decSelfdivideTimeLevel);
+    }
+
+    // =================================================
     // Onclick Increse Divide Amount
     // =================================================
     public void OnclickIncDivideAmount()
@@ -264,6 +294,12 @@ public class UpgradesManager : MonoBehaviour
         if (GameManager._GM.Point < 1f)
         {
             Debug.Log("Point 부족");
+            return;
+        }
+
+        if (_amountLevel >= _incAmountLevel)
+        {
+            Debug.Log("최대 분열량 레벨 도달");
             return;
         }
 
@@ -296,7 +332,7 @@ public class UpgradesManager : MonoBehaviour
             return;
         }
 
-        _currentLifeTime = Mathf.Min(_maxLifeTime, _currentLifeTime + _increseLCTime);
+        _currentLifeTime = Mathf.Min(_maxLifeTime, _currentLifeTime + _incLifeCycleTime);
 
         // 임시
         int cost = 1;
@@ -306,11 +342,41 @@ public class UpgradesManager : MonoBehaviour
         UIManager._UM.CountUp(_incLifeCycleTimeLevelUI, _lifeCycleLevel, _incLifeCycleLevel);
     }
 
+    // =================================================
+    // Onclick Increse Divide Rate
+    // =================================================
+    public void OnClickDivideRate()
+    {
+        if (GameManager._GM.Point < 1f)
+        {
+            Debug.Log("Point 부족 → return");
+            return;
+        }
+
+        if (_currentDivideRate >= _maxDivideRate)
+        {
+            Debug.Log("최대 확률 도달");
+            return;
+        }
+
+        _currentDivideRate = Mathf.Min(_maxDivideRate, _currentDivideRate + _incSelfDivideRate);
+
+        // 임시
+        int cost = 1;
+        _selfDivideRateLevel++;
+
+        GameManager._GM.LoseDNAPoint(cost);
+        UIManager._UM.CountUp(_incSelfDivideRateLevelUI, _selfDivideRateLevel, _incSelfDivideRateLevel);
+    }
+
+    // =================================================
+    // SetUI
+    // =================================================
     public void SetUI()
     {
-        UIManager._UM.CurrentStat(_delayUI, _prodTUI, _amountUI, _lctUI, _sdtUI,
+        UIManager._UM.CurrentStat(_delayUI, _prodTUI, _amountUI, _lctUI, _sdtUI, _sdrUI,
            _CSManager.ClickDelay, _currentProdTime, _CSManager.DivideAmount, 
-           _currentLifeTime, _CSManager.SelfDivideTime);
+           _currentLifeTime, _CSManager.SelfDivideTime, _currentDivideRate);
     }
 
     // =================================================
@@ -327,9 +393,10 @@ public class UpgradesManager : MonoBehaviour
     void Start()
     {
         _decreaseDelay = (_defaultDelayTime - _minDelayTime) / _decDelayLevel;
-        _increseLCTime = (_maxLifeTime - _defaultLifeTime) / _incLifeCycleLevel;
+        _incLifeCycleTime = (_maxLifeTime - _defaultLifeTime) / _incLifeCycleLevel;
         _decreaseProdTime = (_defaultProdTime - _minProdTime) / _decProdLevel;
         _decreaseSelfDivideTime = (_defaultSelfDivideTime - _minSelfDivideTime) / _decSelfdivideTimeLevel;
+        _incSelfDivideRate = (_maxDivideRate - _defaultDivideRate) / _incSelfDivideRateLevel;
     }
 
     // =================================================

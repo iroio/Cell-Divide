@@ -1,3 +1,4 @@
+using TMPro;
 using UnityEngine;
 
 public class CellMediaManager : MonoBehaviour
@@ -6,6 +7,8 @@ public class CellMediaManager : MonoBehaviour
     // Reference
     // =========================================================
     [SerializeField] Transform _cellRoot;
+
+    [SerializeField] TextMeshProUGUI _cellCount;
 
     int _childCount = 0;
 
@@ -33,22 +36,6 @@ public class CellMediaManager : MonoBehaviour
             }
         }
 
-        Debug.Log(_childCount);
-    }
-
-    // =========================================================
-    // Start
-    // =========================================================
-    void Start()
-    {
-        
-    }
-
-    // =========================================================
-    // Update
-    // =========================================================
-    void Update()
-    {
-        
+        UIManager._UM.CellCountUp(_cellCount, _childCount);
     }
 }
