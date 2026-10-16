@@ -9,12 +9,15 @@ public class CellSpawnManager : MonoBehaviour
     // Reference
     // =================================================
     [SerializeField] UpgradesManager _upgradesManager;
+    [SerializeField] CellMediaManager _cellMediaManager;
+    [SerializeField] ToxinManager _toxinManager;
     [SerializeField] InputActionReference _divide;
+
     [SerializeField] GameObject _cellPrefab;
     [SerializeField] Transform _cellRoot;
+
     [SerializeField] GameObject _particlePrefab;
     [SerializeField] Transform _particleRoot;
-    [SerializeField] CellMediaManager _cellMediaManager;
 
     // =================================================
     // Layer Hash
@@ -47,17 +50,19 @@ public class CellSpawnManager : MonoBehaviour
     // =================================================
     // 상태값
     // =================================================
-    bool _isUpgradProdTime = false;
-    bool _isUpgradSelfDivide = false;
+    bool _isUpgradeProdTime = false;
+    bool _isUpgradeSelfDivide = false;
+    bool _isUpgradeToxinGenerate = false;
 
     // =================================================
     // Property
     // =================================================
     public float ClickDelay => _clickDelay;
     public int DivideAmount => _divideAmount;
-    public bool IsUpgradeProdTime => _isUpgradProdTime;
-    public bool IsUpgradeSelfDivide => _isUpgradSelfDivide;
+    public bool IsUpgradeProdTime => _isUpgradeProdTime;
+    public bool IsUpgradeSelfDivide => _isUpgradeSelfDivide;
     public float SelfDivideTime => _selfDivideTime;
+    public bool IsUpgradeToxinGenerate => _isUpgradeToxinGenerate;
 
     // =================================================
     // Object Pool
@@ -70,21 +75,24 @@ public class CellSpawnManager : MonoBehaviour
     // =================================================
     IEnumerator CoClickDelay()
     {
-        Debug.Log("========== [6] CoClickDelay 진입 ==========");
+        int spawnCount = CellDivide();
+
+        if (spawnCount <= 0)
+        {
+            yield break;
+        }
+
+        // 업그레이드 포인트 획득
+        for (int i = 0; i < spawnCount; ++i)
+        {
+            GameManager._GM.GainDNAPoint();
+        }
 
         _canClick = false;
-
-        Debug.Log("[7] _canClick = false");
-
-        CellDivide();
-
-        Debug.Log("[8] CellDivide() 종료");
 
         yield return new WaitForSeconds(_clickDelay);
 
         _canClick = true;
-
-        Debug.Log("[9] 클릭 딜레이 종료 → _canClick = true");
     }
 
     // =================================================
@@ -129,7 +137,7 @@ public class CellSpawnManager : MonoBehaviour
     // =================================================
     public void ChkUpgradeProdTime()
     {
-        _isUpgradProdTime = true;
+        _isUpgradeProdTime = true;
     }
 
     // =================================================
@@ -137,110 +145,93 @@ public class CellSpawnManager : MonoBehaviour
     // =================================================
     public void ChkUpgradeSelfDivide()
     {
-        _isUpgradSelfDivide = true;
+        _isUpgradeSelfDivide = true;
+    }
+
+    // =================================================
+    // Check Upgraded Toxin Generate
+    // =================================================
+    public void ChkUpgradeToxinGenerate()
+    {
+        _isUpgradeToxinGenerate = true;
     }
 
     // =================================================
     // Spawn Cell
     // =================================================
-    public void SpawnCell()
+    public bool SpawnCell()
     {
-        Debug.Log("========== [19] SpawnCell 시작 ==========");
-
-        Debug.Log($"[20] 현재 Cell 개수 = {_cellMediaManager.ChildCount} / {_maxCellCount}");
-
         if (_cellMediaManager.ChildCount >= _maxCellCount)
         {
-            Debug.Log("[21] X 최대 Cell 개수 도달 → Spawn 취소");
-            return;
+            Debug.Log("최대 Cell 개수 도달");
+            return false;
         }
-
-        Debug.Log("[21] O Cell 개수 제한 통과");
 
         var cell = _cellControllerPool.Get();
 
         if (cell == null)
         {
-            Debug.Log("[22] X Pool에서 Cell을 가져오지 못함");
-            return;
+            Debug.Log("Pool에서 Cell을 가져오지 못함");
+            return false;
         }
-
-        Debug.Log($"[22] O Pool Cell 획득 : {cell.name}");
 
         cell.SetLifeCycle(_upgradesManager.CurrentLifeTime);
         cell.SetProdTime(_upgradesManager.CurrentProdTime);
         cell.SetDivideRate(_upgradesManager.CurrentDivideRate);
-
-        Debug.Log(
-        $"[23] Cell Stat 적용 | " +
-        $"LifeTime = {_upgradesManager.CurrentLifeTime}, " +
-        $"ProdTime = {_upgradesManager.CurrentProdTime}, " +
-        $"DivideRate = {_upgradesManager.CurrentDivideRate}"
-    );
+        //cell.SetToxinGenRate(_upgradesManager.
 
         cell.transform.position = _mWorldPos;
-        Debug.Log($"[24] Cell Position 설정 = {cell.transform.position}");
-
         cell.gameObject.SetActive(true);
-        Debug.Log($"[25] O Cell Active = {cell.gameObject.activeSelf}");
 
         // Cell 갯수 업데이트
         _cellMediaManager.ChilldCount();
-        Debug.Log($"[26] 현재 Cell 개수 = {_cellMediaManager.ChildCount}");
 
         cell.StartCellLifeCycle();
-        Debug.Log("[27] LifeCycle 시작");
         cell.StartSelfProduct();
-        Debug.Log("[28] SelfProduct 시작");
         cell.StartSelfDivide();
-        Debug.Log("[29] SelfDivide 시작");
+        cell.StartToxinGenerate();
 
-        Debug.Log("========== [30] SpawnCell 완료 ==========");
+        return true;
     }
 
     // =================================================
     // Cell Divide
     // =================================================
-    public void CellDivide()
+    public int CellDivide()
     {
-        Debug.Log("========== [10] CellDivide 시작 ==========");
-
         _mPos = Mouse.current.position.ReadValue();
-        Debug.Log($"[11] Mouse Screen Position = {_mPos}");
-
         _mWorldPos = Camera.main.ScreenToWorldPoint(_mPos);
-        Debug.Log($"[12] Mouse World Position = {_mWorldPos}");
 
         _hit = Physics2D.OverlapPoint(_mWorldPos, _hash_cellLayer);
+
         if (_hit == null)
         {
-            Debug.Log("[13] X 클릭 위치에서 Cell Collider를 찾지 못함");
-            return;
+            Debug.Log("클릭 위치에서 Cell Collider를 찾지 못함");
+            return 0;
         }
-
-        Debug.Log($"[13] O Cell Collider 발견 : {_hit.name}");
 
         CellController cell = _hit.GetComponent<CellController>();
+
         if(cell == null)
         {
-            Debug.Log($"[14] X {_hit.name}에서 CellController를 찾지 못함");
-            return;
+            Debug.Log($"{_hit.name}에서 CellController를 찾지 못함");
+            return 0;
         }
 
-        Debug.Log($"[14] O CellController 발견 : {cell.name}");
+        int spawnCount = 0;
 
-        Debug.Log($"[15] Spawn 시작 → DivideAmount = {_divideAmount}");
-
+        // 생성할 수 만큼 성공여부 확인
         for (int i = 1; i <= _divideAmount; ++i)
         {
-            Debug.Log($"[16] SpawnCell() 실행 {i}/{_divideAmount}");
+            if (!SpawnCell())
+            {
+                break;
+            }
 
-            SpawnCell();
-
-            Debug.Log($"[17] SpawnCell() 종료 {i}/{_divideAmount}");
+            spawnCount++;
         }
 
-        Debug.Log("[18] CellDivide 완료");
+        return spawnCount;
     }
 
     // =================================================
@@ -252,7 +243,11 @@ public class CellSpawnManager : MonoBehaviour
 
         for (int i = 1; i <= _divideAmount; ++i)
         {
-            SpawnCell();
+            if (!SpawnCell())
+            {
+                // 하나라도 생성 실패 시 실패 처리
+                return;
+            }
         }
     }
 
@@ -295,7 +290,7 @@ public class CellSpawnManager : MonoBehaviour
             var obj = Instantiate(_cellPrefab, _cellRoot);
             obj.SetActive(false);
             var cell = obj.GetComponent<CellController>();
-            cell.InitCell(this);
+            cell.InitCell(this, _toxinManager);
 
             return cell;
         });
@@ -341,38 +336,23 @@ public class CellSpawnManager : MonoBehaviour
     void Update()
     {
         if (!_divide.action.WasPressedThisFrame()) return;
-        Debug.Log("========== [1] 클릭 입력 감지 ==========");
 
         // 버튼 클릭할 때도 Input System 입력이 발생
         // 현재 마우스의 위치가 UI오브젝트 위에 있는가 판별
         // 결과값은 bool
         if (EventSystem.current.IsPointerOverGameObject())
         {
-            Debug.Log("[2] UI 위 클릭 → Cell 생성 취소");
+            Debug.Log("UI 위 클릭");
             return;
         }
-
-        Debug.Log("[2] UI 위 클릭 아님");
 
         if (!_canClick)
         {
-            Debug.Log("[3] 클릭 딜레이 중 → Cell 생성 취소");
+            Debug.Log("클릭 딜레이 중");
             return;
         }
 
-        Debug.Log("[3] 클릭 가능");
-
         // 클릭 딜레이 적용
         StartCoroutine(CoClickDelay());
-
-        Debug.Log("[4] CoClickDelay 시작");
-
-        // 업그레이드 포인트 획득
-        for (int i = 1; i <= _divideAmount; ++i)
-        {
-            GameManager._GM.GainDNAPoint();
-        }
-
-        Debug.Log("[5] DNA Point 획득");
     }
 }

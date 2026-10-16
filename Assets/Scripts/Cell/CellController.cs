@@ -1,5 +1,6 @@
 using System.Collections;
 using UnityEngine;
+using UnityEngine.InputSystem;
 
 public class CellController : MonoBehaviour
 {
@@ -7,6 +8,7 @@ public class CellController : MonoBehaviour
     // Reference
     // =================================================
     CellSpawnManager _cellSpawnManager;
+    ToxinManager _toxinManager;
 
     Rigidbody2D _rb;
     Collider2D _currentArea;
@@ -14,8 +16,8 @@ public class CellController : MonoBehaviour
     // =================================================
     // Cell Movement Option
     // =================================================
-    [SerializeField] float changeTime = 1f;
-    [SerializeField] float rotationTime = 1f;
+    [SerializeField] float _changeTime = 1f;
+    [SerializeField] float _rotationTime = 1f;
     [SerializeField] float _speed = 2f;
 
     Quaternion _targetRotation;
@@ -43,6 +45,12 @@ public class CellController : MonoBehaviour
     float _radius;
 
     // =================================================
+    // Toxin Generat Option
+    // =================================================
+    [SerializeField] float _toxinGenTime = 15f;
+    [SerializeField] float _toxinGenRate = 0.005f;
+
+    // =================================================
     // Layer Hash
     // =================================================
     int _hash_cellMedia;
@@ -52,13 +60,15 @@ public class CellController : MonoBehaviour
     // =================================================
     bool _isSelfProducting = false;
     bool _isSelfDivide = false;
+    bool _isToxinGenerate = false;
 
     // =================================================
     // √ ±‚»≠
     // =================================================
-    public void InitCell(CellSpawnManager manager)
+    public void InitCell(CellSpawnManager manager, ToxinManager toxinManager)
     {
         _cellSpawnManager = manager;
+        _toxinManager = toxinManager;
     }
 
     // =================================================
@@ -83,6 +93,14 @@ public class CellController : MonoBehaviour
     public void SetDivideRate(float rate)
     {
         _selfDivideRate = rate;
+    }
+
+    // =================================================
+    // Set Toxin Generate Rate
+    // =================================================
+    public void SetToxinGenRate(float rate)
+    {
+        _toxinGenRate = rate;
     }
 
     // =================================================
@@ -152,6 +170,29 @@ public class CellController : MonoBehaviour
     }
 
     // =================================================
+    // ToxinGenerator
+    // =================================================
+    IEnumerator CoToxinGenerator()
+    {
+        while (true)
+        {
+            float time = 0;
+
+            while (time < _toxinGenTime)
+            {
+                time += Time.deltaTime;
+
+                yield return null;
+            }
+
+            if (Random.value < _toxinGenRate)
+            {
+                _toxinManager.SpawnToxin(this);
+            }
+        }
+    }
+
+    // =================================================
     // Start Self Life-Cycle
     // =================================================
     public void StartCellLifeCycle()
@@ -186,13 +227,26 @@ public class CellController : MonoBehaviour
     }
 
     // =================================================
+    // Start Toxin Generate
+    // =================================================
+    public void StartToxinGenerate()
+    {
+        if (!_cellSpawnManager.IsUpgradeToxinGenerate)  return;
+        if (_isToxinGenerate) return;
+
+        _isToxinGenerate = true;
+
+        StartCoroutine(CoToxinGenerator());
+    }
+
+    // =================================================
     // Cell Movement
     // =================================================
     public void CellMovement()
     {
         _timer += Time.deltaTime;
 
-        if (_timer >= changeTime)
+        if (_timer >= _changeTime)
         {
             _timer = 0f;
 
@@ -201,7 +255,7 @@ public class CellController : MonoBehaviour
             _targetRotation = Quaternion.Euler(0f,0f, angle) * transform.rotation;
         }
 
-        transform.rotation = Quaternion.Slerp(transform.rotation, _targetRotation, rotationTime * Time.deltaTime);
+        transform.rotation = Quaternion.Slerp(transform.rotation, _targetRotation, _rotationTime * Time.deltaTime);
 
         Vector2 nextPos = _rb.position + (Vector2)transform.right * _speed * Time.deltaTime;
 
@@ -265,6 +319,9 @@ public class CellController : MonoBehaviour
         _hash_cellMedia = 1 << LayerMask.NameToLayer("Media");
     }
 
+    // =================================================
+    // OnDisable
+    // =================================================
     void OnDisable()
     {
         _isSelfProducting = false;

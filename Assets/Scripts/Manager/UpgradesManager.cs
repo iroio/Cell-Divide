@@ -11,6 +11,7 @@ public class UpgradesManager : MonoBehaviour
     [Header("Display Purchase")]
     [SerializeField] TextMeshProUGUI _buySelfProductUI;
     [SerializeField] TextMeshProUGUI _buySelfDivideUI;
+    [SerializeField] TextMeshProUGUI _buyToxinGeneratorUI;
 
     [Header("Display Upgrade Level")]
     // dec
@@ -35,26 +36,37 @@ public class UpgradesManager : MonoBehaviour
     // =================================================
     bool _selfProduct = false;
     bool _selfDivide = false;
+    bool _toxinGen  =false;
 
     // =================================================
-    // Delay Option
+    // Buy Options Cost
+    // =================================================
+    [Header("Buy Options Cost")]
+    [SerializeField] float _selfProdCost = 1f;
+    [SerializeField] float _selfDivideCost = 1f;
+    [SerializeField] float _toxinGenCost = 1f;
+
+    // =================================================
+    // Decrease Click Delay Option
     // =================================================
     [Header("Mouse Click Delay Controll Option")]
     [SerializeField] float _defaultDelayTime = 10f;
     [SerializeField] float _minDelayTime = 0.5f;
     [SerializeField] int _decDelayLevel = 50;
+    [SerializeField] float _decClickDelayCost = 1f;
 
     int _delayLevel = 0;
 
     float _decreaseDelay;
 
     // =================================================
-    // Product Time Option
+    // Decrease Product Time Option
     // =================================================
     [Header("Cell Self-Product Time Option")]
     [SerializeField] float _defaultProdTime = 10f;
     [SerializeField] float _minProdTime = 0.2f;
     [SerializeField] int _decProdLevel = 50;
+    [SerializeField] float _decProdTimeCost = 1f;
 
     int _productLevel = 0;
 
@@ -64,32 +76,35 @@ public class UpgradesManager : MonoBehaviour
     public float CurrentProdTime => _currentProdTime;
 
     // =================================================
-    // Divide Option
+    // Increse Divide Amount Option
     // =================================================
     [Header("Cell Divide Option")]
     [SerializeField] int _incAmountLevel = 50;
+    [SerializeField] float _incDivideAmountCost = 1f;
 
     int _amountLevel = 0;
 
     // =================================================
-    // Self Divide Option
+    // Decrease Self Divide Time Option
     // =================================================
     [Header("Seldf Divide Option")]
     [SerializeField] float _defaultSelfDivideTime = 150f;
     [SerializeField] float _minSelfDivideTime = 100f;
     [SerializeField] int _decSelfdivideTimeLevel = 50;
+    [SerializeField] float _decSelfDivideTimeCost = 1f;
 
     int _selfDivideLevel = 0;
 
     float _decreaseSelfDivideTime;
 
     // =================================================
-    // Self Divide Rate Option
+    // Increse Self Divide Rate Option
     // =================================================
     [Header("Seldf Divide Rate Option")]
     [SerializeField] float _defaultDivideRate = 0.005f;
     [SerializeField] float _maxDivideRate = 0.05f;
     [SerializeField] int _incSelfDivideRateLevel = 50;
+    [SerializeField] float _incDivideRateCost = 1f;
 
     int _selfDivideRateLevel = 0;
 
@@ -99,12 +114,13 @@ public class UpgradesManager : MonoBehaviour
     public float CurrentDivideRate => _currentDivideRate;
 
     // =================================================
-    // Life-Cycle Option
+    // Increse Life-Cycle Option
     // =================================================
     [Header("Cell Life-Cycle Increse Option")]
     [SerializeField] float _maxLifeTime = 90f;
     [SerializeField] float _defaultLifeTime = 15f;
     [SerializeField] int _incLifeCycleLevel = 50;
+    [SerializeField] float _incLifeCycleTimeCost = 1f;
 
     int _lifeCycleLevel = 0;
 
@@ -132,9 +148,9 @@ public class UpgradesManager : MonoBehaviour
         }
 
         // 임시
-        float cost = 1f;
+        float cost = _selfProdCost;
 
-        // 자가 생산 여부 확인
+        // 업그레이드 확인
         _CSManager.ChkUpgradeProdTime();
 
         GameManager._GM.LoseDNAPoint(cost);
@@ -169,9 +185,9 @@ public class UpgradesManager : MonoBehaviour
         }
 
         // 임시
-        float cost = 1f;
+        float cost = _selfDivideCost;
 
-        // 자가 분열
+        // 업그레이드 확인
         _CSManager.ChkUpgradeSelfDivide();
 
         GameManager._GM.LoseDNAPoint(cost);
@@ -182,7 +198,39 @@ public class UpgradesManager : MonoBehaviour
     }
 
     // =================================================
-    // Onclick Decrease Delay
+    // Onclick Buy Toxin Generator
+    // =================================================
+    public void OnclickBuyToxinGen()
+    {
+        // 이미 구매함 팝업
+        if (_toxinGen)
+        {
+            Debug.Log("이미 독소 생성을 구매했습니다.");
+            return;
+        }
+
+        if (GameManager._GM.Point < 1f)
+        {
+            Debug.Log("Point 부족");
+            return;
+        }
+
+        // 임시
+        float cost = _toxinGenCost;
+
+        // 업그레이드 확인
+        _CSManager.ChkUpgradeToxinGenerate();
+
+        GameManager._GM.LoseDNAPoint(cost);
+
+        _toxinGen = true;
+
+        UIManager._UM.Purchase(_buyToxinGeneratorUI, _toxinGen);
+    }
+
+
+    // =================================================
+    // Onclick Decrease Click Delay
     // =================================================
     public void OnclickDecClickDelay()
     {
@@ -203,11 +251,40 @@ public class UpgradesManager : MonoBehaviour
         _CSManager.DecClickDelay(delay);
 
         // 임시
-        float cost = 1f;
+        float cost = _decClickDelayCost;
         _delayLevel++;
 
         GameManager._GM.LoseDNAPoint(cost);
         UIManager._UM.CountUp(_decDelayLevelUI, _delayLevel, _decDelayLevel);
+    }
+
+    // =================================================
+    // Onclick Increse Divide Amount
+    // =================================================
+    public void OnclickIncDivideAmount()
+    {
+        if (GameManager._GM.Point < 1f)
+        {
+            Debug.Log("Point 부족");
+            return;
+        }
+
+        if (_amountLevel >= _incAmountLevel)
+        {
+            Debug.Log("최대 분열량 레벨 도달");
+            return;
+        }
+
+        int divideAmount = _CSManager.DivideAmount;
+        divideAmount++;
+        _CSManager.IncDivideAmount(divideAmount);
+
+        //임시
+        float cost = _incDivideAmountCost;
+        _amountLevel++;
+
+        GameManager._GM.LoseDNAPoint(cost);
+        UIManager._UM.CountUp(_incDivideAmountLevelUI, _amountLevel, _incAmountLevel);
     }
 
     // =================================================
@@ -234,7 +311,7 @@ public class UpgradesManager : MonoBehaviour
         }
 
         // 임시
-        float cost = 1f;
+        float cost = _decProdTimeCost;
 
         // Decrease product Time
         _currentProdTime = Mathf.Max(_minProdTime, _currentProdTime - _decreaseProdTime);
@@ -243,6 +320,33 @@ public class UpgradesManager : MonoBehaviour
 
         GameManager._GM.LoseDNAPoint(cost);
         UIManager._UM.CountUp(_decProdTimeLevelUI, _productLevel, _decProdLevel);
+    }
+
+    // =================================================
+    // Onclick Increse Life Cycle Time
+    // =================================================
+    public void OnclickIncLifeCycleTime()
+    {
+        if (GameManager._GM.Point < 1f)
+        {
+            Debug.Log("Point 부족 → return");
+            return;
+        }
+
+        if (_currentLifeTime >= _maxLifeTime)
+        {
+            Debug.Log("최대 생명주기 도달");
+            return;
+        }
+
+        _currentLifeTime = Mathf.Min(_maxLifeTime, _currentLifeTime + _incLifeCycleTime);
+
+        // 임시
+        float cost = _incLifeCycleTimeCost;
+        _lifeCycleLevel++;
+
+        GameManager._GM.LoseDNAPoint(cost);
+        UIManager._UM.CountUp(_incLifeCycleTimeLevelUI, _lifeCycleLevel, _incLifeCycleLevel);
     }
 
     // =================================================
@@ -279,67 +383,11 @@ public class UpgradesManager : MonoBehaviour
         _CSManager.DecSelfDivideTime(divideTime);
 
         // 임시
-        float cost = 1f;
+        float cost = _decSelfDivideTimeCost;
         _selfDivideLevel++;
 
         GameManager._GM.LoseDNAPoint(cost);
         UIManager._UM.CountUp(_decSelfDivideTimeUI, _selfDivideLevel, _decSelfdivideTimeLevel);
-    }
-
-    // =================================================
-    // Onclick Increse Divide Amount
-    // =================================================
-    public void OnclickIncDivideAmount()
-    {
-        if (GameManager._GM.Point < 1f)
-        {
-            Debug.Log("Point 부족");
-            return;
-        }
-
-        if (_amountLevel >= _incAmountLevel)
-        {
-            Debug.Log("최대 분열량 레벨 도달");
-            return;
-        }
-
-        int divideAmount = _CSManager.DivideAmount;
-        divideAmount++;
-        _CSManager.IncDivideAmount(divideAmount);
-
-        //임시
-        float cost = 1f;
-        _amountLevel++;
-
-        GameManager._GM.LoseDNAPoint(cost);
-        UIManager._UM.CountUp(_incDivideAmountLevelUI, _amountLevel, _incAmountLevel);
-    }
-
-    // =================================================
-    // Onclick Increse Life Cycle Time
-    // =================================================
-    public void OnclickIncLifeCycleTime()
-    {
-        if (GameManager._GM.Point < 1f)
-        {
-            Debug.Log("Point 부족 → return");
-            return;
-        }
-
-        if (_currentLifeTime >= _maxLifeTime)
-        {
-            Debug.Log("최대 생명주기 도달");
-            return;
-        }
-
-        _currentLifeTime = Mathf.Min(_maxLifeTime, _currentLifeTime + _incLifeCycleTime);
-
-        // 임시
-        int cost = 1;
-        _lifeCycleLevel++;
-
-        GameManager._GM.LoseDNAPoint(cost);
-        UIManager._UM.CountUp(_incLifeCycleTimeLevelUI, _lifeCycleLevel, _incLifeCycleLevel);
     }
 
     // =================================================
@@ -362,7 +410,7 @@ public class UpgradesManager : MonoBehaviour
         _currentDivideRate = Mathf.Min(_maxDivideRate, _currentDivideRate + _incSelfDivideRate);
 
         // 임시
-        int cost = 1;
+        float cost = _incDivideRateCost;
         _selfDivideRateLevel++;
 
         GameManager._GM.LoseDNAPoint(cost);
