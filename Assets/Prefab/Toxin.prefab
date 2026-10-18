@@ -13,7 +13,7 @@ GameObject:
   - component: {fileID: 8926445106586261840}
   - component: {fileID: 4586225031205684861}
   - component: {fileID: -1832446944366663831}
-  m_Layer: 0
+  m_Layer: 8
   m_Name: Toxin
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -85,7 +85,7 @@ SpriteRenderer:
   m_SortingOrder: 0
   m_MaskInteraction: 0
   m_Sprite: {fileID: -2413806693520163455, guid: a86470a33a6bf42c4b3595704624658b, type: 3}
-  m_Color: {r: 0, g: 0.6792453, b: 0.0574747, a: 1}
+  m_Color: {r: 0, g: 0.7, b: 0.060693603, a: 1}
   m_FlipX: 0
   m_FlipY: 0
   m_DrawMode: 0

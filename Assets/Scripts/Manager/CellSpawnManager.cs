@@ -1,7 +1,6 @@
 ﻿using System.Collections;
 using UnityEngine;
 using UnityEngine.EventSystems;
-using UnityEngine.InputSystem;
 
 public class CellSpawnManager : MonoBehaviour
 {
@@ -11,7 +10,7 @@ public class CellSpawnManager : MonoBehaviour
     [SerializeField] UpgradesManager _upgradesManager;
     [SerializeField] CellMediaManager _cellMediaManager;
     [SerializeField] ToxinManager _toxinManager;
-    [SerializeField] InputActionReference _divide;
+    [SerializeField] MouseController _musController;
 
     [SerializeField] GameObject _cellPrefab;
     [SerializeField] Transform _cellRoot;
@@ -33,11 +32,8 @@ public class CellSpawnManager : MonoBehaviour
     [SerializeField] int _maxCellCount = 200;
 
     // =================================================
-    // 마우스 위치 정보
+    // 마우스 정보
     // =================================================
-    Vector2 _mPos;
-    Vector2 _mWorldPos = new Vector2(-11f, 0f);
-
     bool _canClick = true;
 
     Collider2D _hit;
@@ -180,7 +176,7 @@ public class CellSpawnManager : MonoBehaviour
         cell.SetDivideRate(_upgradesManager.CurrentDivideRate);
         //cell.SetToxinGenRate(_upgradesManager.
 
-        cell.transform.position = _mWorldPos;
+        cell.transform.position = _musController.MWorldPos;
         cell.gameObject.SetActive(true);
 
         // Cell 갯수 업데이트
@@ -199,10 +195,7 @@ public class CellSpawnManager : MonoBehaviour
     // =================================================
     public int CellDivide()
     {
-        _mPos = Mouse.current.position.ReadValue();
-        _mWorldPos = Camera.main.ScreenToWorldPoint(_mPos);
-
-        _hit = Physics2D.OverlapPoint(_mWorldPos, _hash_cellLayer);
+        _hit = Physics2D.OverlapPoint(_musController.MWorldPos, _hash_cellLayer);
 
         if (_hit == null)
         {
@@ -239,8 +232,6 @@ public class CellSpawnManager : MonoBehaviour
     // =================================================
     public void CellSelfDivide(CellController parentCell)
     {
-        _mWorldPos = parentCell.transform.position;
-
         for (int i = 1; i <= _divideAmount; ++i)
         {
             if (!SpawnCell())
@@ -305,22 +296,6 @@ public class CellSpawnManager : MonoBehaviour
     }
 
     // =================================================
-    // Input System Enable
-    // =================================================
-    void OnEnable()
-    {
-        _divide.action.Enable();
-    }
-
-    // =================================================
-    // Input System Disable
-    // =================================================
-    void OnDisable()
-    {
-        _divide.action.Disable();
-    }
-
-    // =================================================
     // Start
     // =================================================
     void Start()
@@ -335,14 +310,16 @@ public class CellSpawnManager : MonoBehaviour
     // =================================================
     void Update()
     {
-        if (!_divide.action.WasPressedThisFrame()) return;
+        if (!_musController.WasPressed()) return;
 
         // 버튼 클릭할 때도 Input System 입력이 발생
         // 현재 마우스의 위치가 UI오브젝트 위에 있는가 판별
         // 결과값은 bool
-        if (EventSystem.current.IsPointerOverGameObject())
+        if (EventSystem.current.IsPointerOverGameObject()) return;
+
+        if(_toxinManager != null && _toxinManager.CollectToxin())
         {
-            Debug.Log("UI 위 클릭");
+            Debug.Log("Toxin 수집 완료");
             return;
         }
 
