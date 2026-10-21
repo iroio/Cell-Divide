@@ -58,15 +58,17 @@ public class UIManager : MonoBehaviour
     // =========================================================
     public void CurrentStat(TextMeshProUGUI delayUi, TextMeshProUGUI prodTUi,
         TextMeshProUGUI amountUi, TextMeshProUGUI lctUi, TextMeshProUGUI sdtUi,
-        TextMeshProUGUI sdrUi,
-        float delay, float prodT, int amount, float lct, float sdt, float sdr)
+        TextMeshProUGUI sdrUi, TextMeshProUGUI tctUI, TextMeshProUGUI tgrUi,
+        float delay, float prodT, int amount, float lct, float sdt, float sdr, float tct, float tgr)
     {
         delayUi.text = delay.ToString("0.###");
-        prodTUi.text  = prodT.ToString("0.###");
+        prodTUi.text = prodT.ToString("0.###");
         amountUi.text = amount.ToString();
         lctUi.text = lct.ToString("0.###");
         sdtUi.text = sdt.ToString("0.###");
         sdrUi.text = sdr.ToString("0.###");
+        tctUI.text = tct.ToString("0.###");
+        tgrUi.text = tgr.ToString("0.###");
     }
 
     // =========================================================

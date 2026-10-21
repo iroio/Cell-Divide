@@ -10,13 +10,11 @@ public class CellSpawnManager : MonoBehaviour
     [SerializeField] UpgradesManager _upgradesManager;
     [SerializeField] CellMediaManager _cellMediaManager;
     [SerializeField] ToxinManager _toxinManager;
-    [SerializeField] MouseController _musController;
+    [SerializeField] MouseManager _musManager;
+    [SerializeField] ParticleManager _ptcleManager;
 
     [SerializeField] GameObject _cellPrefab;
     [SerializeField] Transform _cellRoot;
-
-    [SerializeField] GameObject _particlePrefab;
-    [SerializeField] Transform _particleRoot;
 
     // =================================================
     // Layer Hash
@@ -32,16 +30,16 @@ public class CellSpawnManager : MonoBehaviour
     [SerializeField] int _maxCellCount = 200;
 
     // =================================================
+    // 파티클 위치
+    // =================================================
+    Vector3 _particlePos;
+
+    // =================================================
     // 마우스 정보
     // =================================================
     bool _canClick = true;
 
     Collider2D _hit;
-
-    // =================================================
-    // 파티클 시스템
-    // =================================================
-    Vector3 _particlePos;
 
     // =================================================
     // 상태값
@@ -64,8 +62,7 @@ public class CellSpawnManager : MonoBehaviour
     // Object Pool
     // =================================================
     GameObjectPool<CellController> _cellControllerPool;
-    GameObjectPool<ParticleSystem> _particleSystemsPool;
-
+    
     // =================================================
     // ClickDelay
     // =================================================
@@ -89,19 +86,6 @@ public class CellSpawnManager : MonoBehaviour
         yield return new WaitForSeconds(_clickDelay);
 
         _canClick = true;
-    }
-
-    // =================================================
-    // Return Particle
-    // =================================================
-    IEnumerator CoReturnParticle(ParticleSystem particle)
-    {
-        yield return new WaitUntil(() => !particle.IsAlive());
-
-        particle.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
-        particle.gameObject.SetActive(false);
-
-        _particleSystemsPool.Set(particle);
     }
 
     // =================================================
@@ -174,9 +158,9 @@ public class CellSpawnManager : MonoBehaviour
         cell.SetLifeCycle(_upgradesManager.CurrentLifeTime);
         cell.SetProdTime(_upgradesManager.CurrentProdTime);
         cell.SetDivideRate(_upgradesManager.CurrentDivideRate);
-        //cell.SetToxinGenRate(_upgradesManager.
+        // toxin gen rate
 
-        cell.transform.position = _musController.MWorldPos;
+        cell.transform.position = _musManager.MWorldPos;
         cell.gameObject.SetActive(true);
 
         // Cell 갯수 업데이트
@@ -195,21 +179,11 @@ public class CellSpawnManager : MonoBehaviour
     // =================================================
     public int CellDivide()
     {
-        _hit = Physics2D.OverlapPoint(_musController.MWorldPos, _hash_cellLayer);
-
-        if (_hit == null)
-        {
-            Debug.Log("클릭 위치에서 Cell Collider를 찾지 못함");
-            return 0;
-        }
+        _hit = Physics2D.OverlapPoint(_musManager.MWorldPos, _hash_cellLayer);
+        if (_hit == null) return 0;
 
         CellController cell = _hit.GetComponent<CellController>();
-
-        if(cell == null)
-        {
-            Debug.Log($"{_hit.name}에서 CellController를 찾지 못함");
-            return 0;
-        }
+        if(cell == null) return 0;
 
         int spawnCount = 0;
 
@@ -259,7 +233,7 @@ public class CellSpawnManager : MonoBehaviour
         _cellMediaManager.ChilldCount();
 
         // 삭제시 파티클 실행
-        var particle = _particleSystemsPool.Get();
+        var particle = _ptcleManager.PSPool.Get();
 
         if(particle == null) return;
 
@@ -268,7 +242,7 @@ public class CellSpawnManager : MonoBehaviour
         particle.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
         particle.Play();
 
-        StartCoroutine(CoReturnParticle(particle));
+       _ptcleManager.StartCoReturnParticle(particle);
     }
 
     // =================================================
@@ -284,14 +258,6 @@ public class CellSpawnManager : MonoBehaviour
             cell.InitCell(this, _toxinManager);
 
             return cell;
-        });
-
-        _particleSystemsPool = new GameObjectPool<ParticleSystem> (5, () =>
-        {
-            var obj = Instantiate(_particlePrefab, _particleRoot);
-            obj.SetActive(false);
-
-            return obj.GetComponent<ParticleSystem>();
         });
     }
 
@@ -310,18 +276,14 @@ public class CellSpawnManager : MonoBehaviour
     // =================================================
     void Update()
     {
-        if (!_musController.WasPressed()) return;
+        if (!_musManager.WasPressed()) return;
 
         // 버튼 클릭할 때도 Input System 입력이 발생
         // 현재 마우스의 위치가 UI오브젝트 위에 있는가 판별
         // 결과값은 bool
         if (EventSystem.current.IsPointerOverGameObject()) return;
 
-        if(_toxinManager != null && _toxinManager.CollectToxin())
-        {
-            Debug.Log("Toxin 수집 완료");
-            return;
-        }
+        if(_toxinManager != null && _toxinManager.CollectToxin()) return;
 
         if (!_canClick)
         {

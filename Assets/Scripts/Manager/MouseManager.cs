@@ -1,7 +1,7 @@
 using UnityEngine;
 using UnityEngine.InputSystem;
 
-public class MouseController : MonoBehaviour
+public class MouseManager : MonoBehaviour
 {
     // =================================================
     // Reference
@@ -50,14 +50,6 @@ public class MouseController : MonoBehaviour
         {
             _divide.action.Disable();
         }
-    }
-
-    // =================================================
-    // Start
-    // =================================================
-    void Start()
-    {
-        
     }
 
     // =================================================

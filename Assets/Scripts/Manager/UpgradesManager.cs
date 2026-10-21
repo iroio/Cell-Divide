@@ -1,4 +1,5 @@
 using TMPro;
+using Unity.Mathematics;
 using UnityEngine;
 
 public class UpgradesManager : MonoBehaviour
@@ -22,6 +23,8 @@ public class UpgradesManager : MonoBehaviour
     [SerializeField] TextMeshProUGUI _incDivideAmountLevelUI;
     [SerializeField] TextMeshProUGUI _incLifeCycleTimeLevelUI;
     [SerializeField] TextMeshProUGUI _incSelfDivideRateLevelUI;
+    [SerializeField] TextMeshProUGUI _incToxinCostUI;
+    [SerializeField] TextMeshProUGUI _incToxinGenRateUI;
 
     [Header("Display Current Stat")]
     [SerializeField] TextMeshProUGUI _delayUI;
@@ -30,6 +33,8 @@ public class UpgradesManager : MonoBehaviour
     [SerializeField] TextMeshProUGUI _lctUI;
     [SerializeField] TextMeshProUGUI _sdtUI;
     [SerializeField] TextMeshProUGUI _sdrUI;
+    [SerializeField] TextMeshProUGUI _tctUI;
+    [SerializeField] TextMeshProUGUI _tgrUI;
 
     // =================================================
     // Buy Option
@@ -57,7 +62,7 @@ public class UpgradesManager : MonoBehaviour
 
     int _delayLevel = 0;
 
-    float _decreaseDelay;
+    float _decDelay;
 
     // =================================================
     // Decrease Product Time Option
@@ -71,7 +76,7 @@ public class UpgradesManager : MonoBehaviour
     int _productLevel = 0;
 
     float _currentProdTime = 10f;
-    float _decreaseProdTime;
+    float _decProdTime;
 
     public float CurrentProdTime => _currentProdTime;
 
@@ -87,7 +92,7 @@ public class UpgradesManager : MonoBehaviour
     // =================================================
     // Decrease Self Divide Time Option
     // =================================================
-    [Header("Seldf Divide Option")]
+    [Header("Self Divide Option")]
     [SerializeField] float _defaultSelfDivideTime = 150f;
     [SerializeField] float _minSelfDivideTime = 100f;
     [SerializeField] int _decSelfdivideTimeLevel = 50;
@@ -95,12 +100,12 @@ public class UpgradesManager : MonoBehaviour
 
     int _selfDivideLevel = 0;
 
-    float _decreaseSelfDivideTime;
+    float _decSelfDivideTime;
 
     // =================================================
     // Increse Self Divide Rate Option
     // =================================================
-    [Header("Seldf Divide Rate Option")]
+    [Header("Self Divide Rate Option")]
     [SerializeField] float _defaultDivideRate = 0.005f;
     [SerializeField] float _maxDivideRate = 0.05f;
     [SerializeField] int _incSelfDivideRateLevel = 50;
@@ -114,13 +119,13 @@ public class UpgradesManager : MonoBehaviour
     public float CurrentDivideRate => _currentDivideRate;
 
     // =================================================
-    // Increse Life-Cycle Option
+    // Increse Cell Life-Cycle Option
     // =================================================
     [Header("Cell Life-Cycle Increse Option")]
-    [SerializeField] float _maxLifeTime = 90f;
-    [SerializeField] float _defaultLifeTime = 15f;
-    [SerializeField] int _incLifeCycleLevel = 50;
-    [SerializeField] float _incLifeCycleTimeCost = 1f;
+    [SerializeField] float _defaultCellLifeTime = 15f;
+    [SerializeField] float _maxCellLifeTime = 90f;
+    [SerializeField] int _incCellLifeTimeLevel = 50;
+    [SerializeField] float _incCellLifeTimeCost = 1f;
 
     int _lifeCycleLevel = 0;
 
@@ -128,6 +133,38 @@ public class UpgradesManager : MonoBehaviour
     float _incLifeCycleTime;
 
     public float CurrentLifeTime => _currentLifeTime;
+
+    // =================================================
+    // Increse Toxin Cost Option
+    // =================================================
+    [Header("Increse Toxin Cost Option")]
+    [SerializeField] float _defaultToxinCost = 1f;
+    [SerializeField] float _maxToxinCost = 10f;
+    [SerializeField] int _incToxinCostLevel = 10;
+    [SerializeField] float _incToxinCostCost = 1f;
+
+    int _toxinCostLevel = 0;
+
+    float _currentToxinCost = 1f;
+    float _incToxinCost;
+
+    public float CurrentToxinCost => _currentToxinCost;
+
+    // =================================================
+    // Increse Toxin Generate Rate Option
+    // =================================================
+    [Header("Increse Toxin Generate Rate Option")]
+    [SerializeField] float _defaultToxinGenRate = 0.005f;
+    [SerializeField] float _maxToxinGenRate = 0.05f;
+    [SerializeField] int _incToxinGenRateLevel = 50;
+    [SerializeField] float _incToxinGenRateCost = 1f;
+
+    int _toxinGenRateLevel = 0;
+
+    float _currentToxinGenRate = 0.005f;
+    float _incToxinGenRate;
+
+    public float CurrentToxinGenRate => _currentToxinGenRate;
 
     // =================================================
     // Onclick Buy Self Product
@@ -141,7 +178,7 @@ public class UpgradesManager : MonoBehaviour
             return;
         }
 
-        if (GameManager._GM.Point < 1f)
+        if (GameManager._GM.Point < _selfProdCost)
         {
             Debug.Log("Point 부족");
             return;
@@ -172,7 +209,7 @@ public class UpgradesManager : MonoBehaviour
             return;
         }
 
-        if (GameManager._GM.Point < 1f)
+        if (GameManager._GM.Point < _selfDivideCost)
         {
             Debug.Log("Point 부족");
             return;
@@ -209,7 +246,7 @@ public class UpgradesManager : MonoBehaviour
             return;
         }
 
-        if (GameManager._GM.Point < 1f)
+        if (GameManager._GM.Point < _toxinGenCost)
         {
             Debug.Log("Point 부족");
             return;
@@ -234,7 +271,7 @@ public class UpgradesManager : MonoBehaviour
     // =================================================
     public void OnclickDecClickDelay()
     {
-        if (GameManager._GM.Point < 1f)
+        if (GameManager._GM.Point < _decClickDelayCost)
         {
             Debug.Log("Point 부족");
             return;
@@ -247,7 +284,7 @@ public class UpgradesManager : MonoBehaviour
         }
 
         float delay = _CSManager.ClickDelay;
-        delay = Mathf.Max(_minDelayTime, delay - _decreaseDelay);
+        delay = Mathf.Max(_minDelayTime, delay - _decDelay);
         _CSManager.DecClickDelay(delay);
 
         // 임시
@@ -263,7 +300,7 @@ public class UpgradesManager : MonoBehaviour
     // =================================================
     public void OnclickIncDivideAmount()
     {
-        if (GameManager._GM.Point < 1f)
+        if (GameManager._GM.Point < _incDivideAmountCost)
         {
             Debug.Log("Point 부족");
             return;
@@ -292,7 +329,7 @@ public class UpgradesManager : MonoBehaviour
     // =================================================
     public void OnclickDecPordTime()
     {
-        if (GameManager._GM.Point < 1f)
+        if (GameManager._GM.Point < _decProdTimeCost)
         {
             Debug.Log("Point 부족");
             return;
@@ -314,7 +351,7 @@ public class UpgradesManager : MonoBehaviour
         float cost = _decProdTimeCost;
 
         // Decrease product Time
-        _currentProdTime = Mathf.Max(_minProdTime, _currentProdTime - _decreaseProdTime);
+        _currentProdTime = Mathf.Max(_minProdTime, _currentProdTime - _decProdTime);
 
         _productLevel++;
 
@@ -325,28 +362,28 @@ public class UpgradesManager : MonoBehaviour
     // =================================================
     // Onclick Increse Life Cycle Time
     // =================================================
-    public void OnclickIncLifeCycleTime()
+    public void OnclickIncCellLifeTime()
     {
-        if (GameManager._GM.Point < 1f)
+        if (GameManager._GM.Point < _incCellLifeTimeCost)
         {
             Debug.Log("Point 부족 → return");
             return;
         }
 
-        if (_currentLifeTime >= _maxLifeTime)
+        if (_currentLifeTime >= _maxCellLifeTime)
         {
             Debug.Log("최대 생명주기 도달");
             return;
         }
 
-        _currentLifeTime = Mathf.Min(_maxLifeTime, _currentLifeTime + _incLifeCycleTime);
+        _currentLifeTime = Mathf.Min(_maxCellLifeTime, _currentLifeTime + _incLifeCycleTime);
 
         // 임시
-        float cost = _incLifeCycleTimeCost;
+        float cost = _incCellLifeTimeCost;
         _lifeCycleLevel++;
 
         GameManager._GM.LoseDNAPoint(cost);
-        UIManager._UM.CountUp(_incLifeCycleTimeLevelUI, _lifeCycleLevel, _incLifeCycleLevel);
+        UIManager._UM.CountUp(_incLifeCycleTimeLevelUI, _lifeCycleLevel, _incCellLifeTimeLevel);
     }
 
     // =================================================
@@ -354,7 +391,7 @@ public class UpgradesManager : MonoBehaviour
     // =================================================
     public void OnClickDecSelfDivideTime()
     {
-        if (GameManager._GM.Point < 1f)
+        if (GameManager._GM.Point < _decSelfDivideTimeCost)
         {
             Debug.Log("Point 부족");
             return;
@@ -379,7 +416,7 @@ public class UpgradesManager : MonoBehaviour
         }
 
         float divideTime = _CSManager.SelfDivideTime;
-        divideTime = Mathf.Max(_minSelfDivideTime, divideTime - _decreaseSelfDivideTime);
+        divideTime = Mathf.Max(_minSelfDivideTime, divideTime - _decSelfDivideTime);
         _CSManager.DecSelfDivideTime(divideTime);
 
         // 임시
@@ -393,9 +430,9 @@ public class UpgradesManager : MonoBehaviour
     // =================================================
     // Onclick Increse Divide Rate
     // =================================================
-    public void OnClickDivideRate()
+    public void OnClickIncDivideRate()
     {
-        if (GameManager._GM.Point < 1f)
+        if (GameManager._GM.Point < _incDivideRateCost)
         {
             Debug.Log("Point 부족 → return");
             return;
@@ -418,13 +455,67 @@ public class UpgradesManager : MonoBehaviour
     }
 
     // =================================================
+    // Onclick Increse Toxin Cost
+    // =================================================
+    public void OnClickIncToxinCost()
+    {
+        if (GameManager._GM.Point < _incToxinCostCost)
+        {
+            Debug.Log("Point 부족 → return");
+            return;
+        }
+
+        if (_currentToxinCost >= _maxToxinCost)
+        {
+            Debug.Log("최대 가치 도달");
+            return;
+        }
+
+        _currentToxinCost++;
+
+        // 임시
+        float cost = _incToxinCostCost;
+        _incToxinCostLevel++;
+
+        GameManager._GM.LoseDNAPoint(cost);
+        UIManager._UM.CountUp(_incToxinCostUI, _toxinCostLevel, _incToxinCostLevel);
+    }
+
+    // =================================================
+    // Onclick Increse Toxin Generate Rate
+    // =================================================
+    public void OnClickIncToxinGenRate()
+    {
+        if (GameManager._GM.Point < _incToxinGenRateCost)
+        {
+            Debug.Log("Point 부족 → return");
+            return;
+        }
+
+        if(_currentToxinGenRate >= _maxToxinGenRate)
+        {
+            Debug.Log("최대 확률 도달");
+            return;
+        }
+
+        _currentToxinGenRate = Mathf.Min(_maxToxinGenRate, _currentToxinGenRate + _incToxinGenRate);
+
+        // 임시
+        float cost = _incToxinGenRateCost;
+        _toxinGenRateLevel++;
+
+        GameManager._GM.LoseDNAPoint(cost);
+        UIManager._UM.CountUp(_incToxinGenRateUI, _toxinGenRateLevel, _incToxinGenRateLevel);
+    }
+
+    // =================================================
     // SetUI
     // =================================================
     public void SetUI()
     {
-        UIManager._UM.CurrentStat(_delayUI, _prodTUI, _amountUI, _lctUI, _sdtUI, _sdrUI,
-           _CSManager.ClickDelay, _currentProdTime, _CSManager.DivideAmount, 
-           _currentLifeTime, _CSManager.SelfDivideTime, _currentDivideRate);
+        UIManager._UM.CurrentStat(_delayUI, _prodTUI, _amountUI, _lctUI, _sdtUI, _sdrUI, _tctUI, _tgrUI,
+           _CSManager.ClickDelay, _currentProdTime, _CSManager.DivideAmount, _currentLifeTime,
+           _CSManager.SelfDivideTime, _currentDivideRate, _currentToxinCost, _currentToxinGenRate);
     }
 
     // =================================================
@@ -432,7 +523,11 @@ public class UpgradesManager : MonoBehaviour
     // =================================================
     void Awake()
     {
-        _currentLifeTime = _defaultLifeTime;
+        _currentProdTime = _defaultProdTime;
+        _currentLifeTime = _defaultCellLifeTime;
+        _currentDivideRate = _defaultDivideRate;
+        _currentToxinCost = _defaultToxinCost;
+        _currentToxinGenRate = _defaultToxinGenRate;
     }
 
     // =================================================
@@ -440,11 +535,12 @@ public class UpgradesManager : MonoBehaviour
     // =================================================
     void Start()
     {
-        _decreaseDelay = (_defaultDelayTime - _minDelayTime) / _decDelayLevel;
-        _incLifeCycleTime = (_maxLifeTime - _defaultLifeTime) / _incLifeCycleLevel;
-        _decreaseProdTime = (_defaultProdTime - _minProdTime) / _decProdLevel;
-        _decreaseSelfDivideTime = (_defaultSelfDivideTime - _minSelfDivideTime) / _decSelfdivideTimeLevel;
+        _decDelay = (_defaultDelayTime - _minDelayTime) / _decDelayLevel;
+        _incLifeCycleTime = (_maxCellLifeTime - _defaultCellLifeTime) / _incCellLifeTimeLevel;
+        _decProdTime = (_defaultProdTime - _minProdTime) / _decProdLevel;
+        _decSelfDivideTime = (_defaultSelfDivideTime - _minSelfDivideTime) / _decSelfdivideTimeLevel;
         _incSelfDivideRate = (_maxDivideRate - _defaultDivideRate) / _incSelfDivideRateLevel;
+        _incToxinGenRate = (_maxToxinGenRate - _defaultToxinGenRate) / _incToxinGenRateLevel;
     }
 
     // =================================================

@@ -1,20 +1,27 @@
+using System.Collections;
 using UnityEngine;
 using UnityEngine.EventSystems;
-using UnityEngine.InputSystem;
 
 public class ToxinManager : MonoBehaviour
 {
     // =================================================
     // Reference
     // =================================================
-    [SerializeField] MouseController _musController;
-    [SerializeField] GameObject _toxinPrefab;
+    [SerializeField] MouseManager _musManager;
+    [SerializeField] ParticleManager _ptcleManager;
+
+    [SerializeField] GameObject toxinPrefab;
     [SerializeField] Transform _toxinRoot;
 
     // =================================================
     // 마우스 정보
     // =================================================
     Collider2D _hit;
+
+    // =================================================
+    // 파티클 위치
+    // =================================================
+    Vector2 _toxinPos;
 
     // =================================================
     // Layer Hash
@@ -24,14 +31,14 @@ public class ToxinManager : MonoBehaviour
     // =================================================
     // Object Pool
     // =================================================
-    GameObjectPool<ToxinController> _toxinPool;
+    GameObjectPool<ToxinController> _toxinControllerPool;
 
     // =================================================
     // SpawnToxin
     // =================================================
     public void SpawnToxin(CellController parentCell)
     {
-        var toxin = _toxinPool.Get();
+        var toxin = _toxinControllerPool.Get();
 
         if(toxin == null)
         {
@@ -50,21 +57,11 @@ public class ToxinManager : MonoBehaviour
     // =================================================
     public bool CollectToxin()
     {
-        _hit = Physics2D.OverlapPoint(_musController.MWorldPos, _hash_toxinLayer);
-        
-        if (_hit == null)
-        {
-            Debug.Log("클릭 위치에서 Toxin Collider를 찾지 못함");
-            return false;
-        }
+        _hit = Physics2D.OverlapPoint(_musManager.MWorldPos, _hash_toxinLayer);
+        if (_hit == null) return false;
         
         ToxinController toxin = _hit.GetComponent<ToxinController>();
-
-        if(toxin == null)
-        {
-            Debug.Log($"{_hit.name}에서 ToxinController를 찾지 못함");
-            return false;
-        }
+        if(toxin == null) return false;
 
         GameManager._GM.GainDNAPoint();
         DeleteToxin(toxin);
@@ -79,8 +76,23 @@ public class ToxinManager : MonoBehaviour
     {
         if (!toxin.gameObject.activeSelf) return;
 
+        _toxinPos = toxin.transform.position;
+
+        // Toxin Set()
         toxin.gameObject.SetActive(false);
-        _toxinPool.Set(toxin);
+        _toxinControllerPool.Set(toxin);
+
+        // 삭제시 파티클 실행
+        var toxicle = _ptcleManager.TXPool.Get();
+
+        if (toxicle == null) return;
+
+        toxicle.transform.position = _toxinPos;
+        toxicle.gameObject.SetActive(true);
+        toxicle.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
+        toxicle.Play();
+
+        _ptcleManager.StartCoReturnParticle(toxicle);
     }
 
     // =================================================
@@ -88,14 +100,12 @@ public class ToxinManager : MonoBehaviour
     // =================================================
     void Awake()
     {
-        _toxinPool = new GameObjectPool<ToxinController>(10, () =>
+        _toxinControllerPool = new GameObjectPool<ToxinController>(5, () =>
         {
-            var obj = Instantiate(_toxinPrefab, _toxinRoot);
+            var obj = Instantiate(toxinPrefab, _toxinRoot);
             obj.SetActive(false);
-            var toxin = obj.GetComponent<ToxinController>();
-            toxin.InitToxin(this);
 
-            return toxin;
+            return obj.GetComponent<ToxinController>();
         });
     }
 
@@ -112,7 +122,7 @@ public class ToxinManager : MonoBehaviour
     // =================================================
     void Update()
     {
-        if (!_musController.WasPressed()) return;
+        if (!_musManager.WasPressed()) return;
         if (EventSystem.current.IsPointerOverGameObject()) return;
 
         CollectToxin();
