@@ -55,7 +55,6 @@ public class MouseManager : MonoBehaviour
     // =================================================
     // Update
     // =================================================
-    // Update is called once per frame
     void Update()
     {
         CalcMousePos();

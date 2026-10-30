@@ -182,9 +182,6 @@ public class CellSpawnManager : MonoBehaviour
         _hit = Physics2D.OverlapPoint(_musManager.MWorldPos, _hash_cellLayer);
         if (_hit == null) return 0;
 
-        CellController cell = _hit.GetComponent<CellController>();
-        if(cell == null) return 0;
-
         int spawnCount = 0;
 
         // 생성할 수 만큼 성공여부 확인
@@ -192,6 +189,7 @@ public class CellSpawnManager : MonoBehaviour
         {
             if (!SpawnCell())
             {
+                // 하나라도 생성 실패 시 실패 처리
                 break;
             }
 
@@ -291,7 +289,6 @@ public class CellSpawnManager : MonoBehaviour
             return;
         }
 
-        // 클릭 딜레이 적용
         StartCoroutine(CoClickDelay());
     }
 }

@@ -323,8 +323,11 @@ public class CellController : MonoBehaviour
     // =================================================
     void OnDisable()
     {
+        StopAllCoroutines();
+
         _isSelfProducting = false;
         _isSelfDivide = false;
+        _isToxinGenerate = false;
     }
 
     // =================================================
